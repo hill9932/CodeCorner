@@ -102,7 +102,6 @@ namespace LabSpace
             for (; it != buffers.end(); ++it)
             {
                 m_ofs.write_w((const byte*)(*it)->data(), (*it)->length());
-                //stream().setBuffer(*it);
             }
 
             if (buffers.size())
