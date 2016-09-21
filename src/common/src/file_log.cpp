@@ -161,8 +161,8 @@ namespace LabSpace
             m_ofs.close();
 
             int bc = getBuffersCount();
-            snprintf_t(p, 32, "%d, zeros = %d, count = %d\r\n", n, zeros, bc);
-            cerr << endl << counts << endl;
+//            cerr << endl << counts;
+            cerr << endl << "zeros = " << zeros << ", " << "count = " << bc << endl;
         }
 
         bool CFileLogger::start()

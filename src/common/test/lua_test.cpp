@@ -19,11 +19,11 @@ public:
         //
         // these are the values we will check from lua file
         //
-        m_objStorage["path"]        = "/pvc/data/packetdb1|5";
-        m_objStorage["io_queue"]    = "8";
-        m_objStorage["page_count"]  = "2048";
-        m_objStorage["file_size"]   = "128";
-        m_objStorage["need_warm_up"]= "false";
+        m_objStorage["path"]         = "/pvc/data/packetdb1|5";
+        m_objStorage["io_queue"]     = "8";
+        m_objStorage["page_count"]   = "2048";
+        m_objStorage["file_size"]    = "128";
+        m_objStorage["need_warm_up"] = "false";
         
         m_strObjGlobal["log4cplus_properties"] = "/etc/pvc/pktagent/pvc_pktagent_log4cplus.properties";
         m_intObjGlobal["VENDOR_PVC"] = "4";

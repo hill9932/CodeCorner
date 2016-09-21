@@ -5,10 +5,10 @@
 #include <boost/noncopyable.hpp>
 
 
-namespace LabSpace
-{
-    namespace Common
+    namespace LabSpace
     {
+        namespace Common
+        {
         struct TimeUtil
         {
             /**
