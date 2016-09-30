@@ -249,7 +249,7 @@ namespace LabSpace
             virtual bool getBlockMode() { return false; }
 
         public:
-            static LPFN_ACCEPTEX    m_lpfnAcceptEx;         // AcceptEx����ָ��  
+            static LPFN_ACCEPTEX    m_lpfnAcceptEx;         // AcceptE
             static LPFN_GETACCEPTEXSOCKADDRS m_lpfnGetAcceptExSockAddrs;
 
             char m_buffer[128];  // keep the local and remote addresses saved by AcceptEx

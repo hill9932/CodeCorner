@@ -41,6 +41,7 @@ target_link_libraries(common lua)
 if (MSVC)
 	target_link_libraries(common Ws2_32.lib)
 endif()
+set_target_properties (common PROPERTIES FOLDER lib)
 
 #
 # this project is to test common library

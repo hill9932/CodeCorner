@@ -6,6 +6,29 @@ namespace LabSpace
     {
         #define UNDEFINED_PORT  13
 
+        int CInetAddr::init()
+        {
+            int err = 0;
+
+#ifdef WIN32
+            WORD wVersionRequested;
+            WSADATA wsaData;
+            wVersionRequested = MAKEWORD(2, 2);
+
+            err = WSAStartup(wVersionRequested, &wsaData);
+#endif
+            return err;
+        }
+
+        int CInetAddr::cleanup()
+        {
+            int err = 0;
+#ifdef WIN32
+            WSACleanup();
+#endif
+            return err;
+        }
+
         CInetAddr::CInetAddr()
         {
             memset(&m_storage, 0, sizeof(m_storage));

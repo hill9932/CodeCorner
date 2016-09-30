@@ -47,3 +47,8 @@ link_directories("${PROJECT_ROOT_PATH}/3rdParty/boost_1_60_0/stage64/lib")
 #
 add_subdirectory(src/common)
 add_subdirectory(src/net)
+
+#
+# include the applications
+#
+add_subdirectory(app/webspy)

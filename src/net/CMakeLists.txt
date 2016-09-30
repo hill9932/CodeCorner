@@ -18,7 +18,7 @@ set(NET_HEADER 	src/inetaddr.h
 add_library(net STATIC ${NET_SRC} ${NET_HEADER})
 add_dependencies(net common)
 target_link_libraries(net common)
-
+set_target_properties (net PROPERTIES FOLDER lib)
 
 #
 # this project is to test net library
