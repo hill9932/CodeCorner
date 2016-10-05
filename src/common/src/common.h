@@ -2,7 +2,7 @@
 #define __HL_COMMON_INCLUDE_H__
 
 #include "def.h"
-
+#include "locker_.h"
 
 namespace LabSpace
 {

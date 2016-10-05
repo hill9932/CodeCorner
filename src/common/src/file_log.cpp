@@ -60,7 +60,7 @@ namespace LabSpace
             if (now != m_conf.createTime)
             {
                 CStdString name;
-                name.Format("%s.%s.%s.%d",
+                name.Format("%s_%s_%s_%d",
                     s_processName.c_str(),
                     TimeUtil::GetNowTimeStr(true).c_str(),
                     SysUtil::GetHostName().c_str(),
@@ -127,7 +127,7 @@ namespace LabSpace
                 if (0 == (n = saveBuffers()))
                 {
                     ++zeros;
-                    SleepUS(1);
+                    SleepMS(10);
                 }
 
                 if (n > 0)

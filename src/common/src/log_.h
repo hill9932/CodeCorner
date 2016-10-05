@@ -5,21 +5,17 @@
 #include "string_util.h"
 #include "time_.h"
 #include "buffer_.h"
+#include "locker_.h"
 
 #include <list>
-#include <mutex>
 #include <memory>
-#include <condition_variable>
-#include <atomic>
 
 using namespace LabSpace::Common;
 
-#define SCOPED_GUARD(lock)  std::lock_guard<std::mutex> guard(lock)
 
-
-#define PRINT_MSG(msg)  cerr << TimeUtil::GetNowTimeStr() << "\t" \
-                             << StrUtil::GetFileName(__FILE__).c_str() << ":" << __LINE__ << " - " \
-                             << msg << endl;
+#define PRINT_MSG(msg)  std::cerr   << TimeUtil::GetNowTimeStr() << "\t" \
+                                    << StrUtil::GetFileName(__FILE__).c_str() << ":" << __LINE__ << " - " \
+                                    << msg << endl;
 
 #define RM_LOG_ERROR(msg)    PRINT_MSG(msg)
 
@@ -63,6 +59,17 @@ using namespace LabSpace::Common;
     if (expr comp error)	{                   \
         u_int32 err = Util::GetLastSysError();  \
         LOG_ERRORMSG(err);                      \
+        action;	                                \
+    }
+
+#define ON_ERROR_PRINT_MSG(expr, comp, error, msg)    \
+    if (expr comp error)	{                   \
+        RM_LOG_ERROR(msg)                       \
+    }
+
+#define ON_ERROR_PRINT_MSG_AND_DO(expr, comp, error, msg, action)    \
+    if (expr comp error)	{                   \
+        RM_LOG_ERROR(msg)                       \
         action;	                                \
     }
 
@@ -220,23 +227,5 @@ namespace LabSpace
     }
 }
 
-
-#define LOG_TRACE if (CFileLogger::getLogLevel()    <= CFileLogger::TRACE)      \
-  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::TRACE).stream()
-
-#define LOG_DEBUG if (CFileLogger::getLogLevel()    <= CFileLogger::DEBUG)      \
-  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::DEBUG).stream()
-
-#define LOG_INFO if (CFileLogger::getLogLevel()     <= CFileLogger::INFO)       \
-  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::INFO).stream()
-
-#define LOG_WARN if (CFileLogger::getLogLevel()     <= CFileLogger::WARN)       \
-  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::WARN).stream()
-
-#define LOG_ERROR if (CFileLogger::getLogLevel()    <= CFileLogger::ERR)        \
-  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::ERR).stream()
-
-#define LOG_FATAL if (CFileLogger::getLogLevel()    <= CFileLogger::FATAL)      \
-  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::FATAL).stream()
 
 #endif

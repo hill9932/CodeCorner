@@ -18,7 +18,9 @@ set(COMMON_SRC 		src/common.cpp
 					src/thread_.cpp
 					src/system_.cpp
 					src/platform_win32.cpp
-					src/platform_linux.cpp)
+					src/platform_linux.cpp
+					src/sqlite3.c
+					src/sqlite_.cpp)
 					
 set(COMMON_HEADER 	src/platform.h
 					src/def.h
@@ -33,7 +35,10 @@ set(COMMON_HEADER 	src/platform.h
 					src/file_.h
 					src/aio_.h
 					src/thread_.h
-					src/system_.h)
+					src/system_.h
+					src/sqlite_.h
+					src/locker_.h
+					src/singleton.h)
 
 add_library(common STATIC ${COMMON_SRC} ${COMMON_HEADER})
 target_link_libraries(common lua)

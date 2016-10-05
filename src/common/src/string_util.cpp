@@ -176,7 +176,7 @@ namespace LabSpace
         }
 
         /**
-        * @Function: Get the file path exclude the command line
+        * @Function: Get the file name exclude the command line
         **/
         tstring StrUtil::GetFileName(const tstring& _exePath)
         {
@@ -198,6 +198,43 @@ namespace LabSpace
             return path;
         }
 
+
+        tstring StrUtil::GetFileDir(const tstring& _path)
+        {
+            CStdString path = _path;
+            int pos = path.size() - 1;
+
+            while (pos >= 0 &&
+                (path.GetAt(pos) == '/' ||
+                path.GetAt(pos) == '\\'))
+                --pos;
+
+            //
+            // only keep one '/' or '\' at the ending
+            //
+            if (pos != path.size() - 1)
+            {
+                return path.Mid(0, MyMax(1, pos + 1));
+            }
+
+            size_t prexPos = 0;
+            while (path.GetAt(prexPos) == '/' || path.GetAt(prexPos) == '\\')
+                ++prexPos;
+
+            if (prexPos > 0)
+                --prexPos;
+
+            if ((pos = path.ReverseFind('\\')) != (size_t)-1 ||
+                (pos = path.ReverseFind('/')) != (size_t)-1)
+            {
+                if (pos >= prexPos)
+                    return path.Mid(0, MyMax(1, pos));
+                else
+                    return "";
+            }
+
+            return "";
+        }
 
         /**
         * @Function: Get the file path exclude the command line

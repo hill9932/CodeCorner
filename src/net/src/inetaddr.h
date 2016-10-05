@@ -67,6 +67,8 @@ namespace LabSpace
             static void freeLocalAddrs(local_addr_t*&);
             static int  isValidPort(const tstring& _port);
             static int  isIPAddress(const char* _ipAddr);
+            static int  init();
+            static int  cleanup();
 
             /**
              * @Function: Create an AF_INET Address

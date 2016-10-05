@@ -59,6 +59,8 @@ namespace LabSpace
              **/
             static tstring GetFileName(const tstring& _exePath);
 
+            static tstring GetFileDir(const tstring& _path);
+
             /**
              * @Function: Check the regular expression
              **/

@@ -42,11 +42,27 @@ namespace LabSpace
                 tstring         fileName;
                 u_int32         fileIndex;
             } m_conf;
-
-
         };
     }
 }
 
+
+#define LOG_TRACE_STREAM if (CFileLogger::getLogLevel()    <= CFileLogger::TRACE)      \
+  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::TRACE).stream()
+
+#define LOG_DEBUG_STREAM if (CFileLogger::getLogLevel()    <= CFileLogger::DEBUG)      \
+  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::DEBUG).stream()
+
+#define LOG_INFO_STREAM if (CFileLogger::getLogLevel()     <= CFileLogger::INFO)       \
+  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::INFO).stream()
+
+#define LOG_WARN_STREAM if (CFileLogger::getLogLevel()     <= CFileLogger::WARN)       \
+  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::WARN).stream()
+
+#define LOG_ERROR_STREAM if (CFileLogger::getLogLevel()    <= CFileLogger::ERR)        \
+  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::ERR).stream()
+
+#define LOG_FATAL_STREAM if (CFileLogger::getLogLevel()    <= CFileLogger::FATAL)      \
+  CLogger(__FILE__, __LINE__, __FUNCTION__, CFileLogger::FATAL).stream()
 
 #endif

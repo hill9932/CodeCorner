@@ -61,8 +61,8 @@ void AnotherThread()
 {
     for (int i = 0; i < LOG_COUNT; ++i)
     {
-        LOG_INFO << i << ". I'm another thread!";
-        LOG_INFO << i << ". " << 3.1415926;
+        LOG_INFO_STREAM << i << ". I'm another thread!";
+        LOG_INFO_STREAM << i << ". " << 3.1415926;
     }
 }
 
@@ -76,9 +76,9 @@ TEST_F(CLogTester, logFile)
 
         for (int i = 0; i < LOG_COUNT; ++i)
         {
-            LOG_INFO << i << ". Hello, mylog!";
-            LOG_INFO << i << ". " << (u_int64)123456789LL;
-            LOG_INFO << i << ". " << &td;
+            LOG_INFO_STREAM << i << ". Hello, mylog!";
+            LOG_INFO_STREAM << i << ". " << (u_int64)123456789LL;
+            LOG_INFO_STREAM << i << ". " << &td;
         }
 
         td.join();

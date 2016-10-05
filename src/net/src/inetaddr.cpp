@@ -16,6 +16,7 @@ namespace LabSpace
             wVersionRequested = MAKEWORD(2, 2);
 
             err = WSAStartup(wVersionRequested, &wsaData);
+            ON_ERROR_PRINT_LASTMSG_AND_DO(err, != , 0, ;);
 #endif
             return err;
         }

@@ -81,7 +81,7 @@ namespace LabSpace
                 appPath[rval] = '\0';
 #endif
 
-            return StrUtil::GetFilePath(appPath) + "/";
+            return StrUtil::GetFileDir(appPath) + "/";
         }
     
         tstring FileUtil::GetAppName()
