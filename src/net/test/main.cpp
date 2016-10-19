@@ -1,9 +1,11 @@
 #include <iostream>
 #include <popt/popt.h>
 #include "global.h"
+#include "../src/log_.h"
 
 
 config_t g_conf;
+log4cplus::Logger*  g_logger;
 
 int main(int _argc, char* _argv[])
 {

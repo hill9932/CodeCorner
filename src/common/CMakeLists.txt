@@ -63,6 +63,6 @@ set(COMMON_TEST_SRC	test/string_test.cpp
 
 add_executable(common_test ${COMMON_TEST_SRC})
 add_dependencies(common_test common)
-target_link_libraries(common_test common gtest popt)
+target_link_libraries(common_test common gtest popt log4cplus.lib)
 
 set_target_properties (common_test PROPERTIES FOLDER test)

@@ -4,3 +4,5 @@
 
 /bin/Debug/CoverageReport-2016-08-29-17h55m53s
 /bin/Debug/CoverageReport-2016-08-29-17h55m53s
+*.ilk
+*.pdb
