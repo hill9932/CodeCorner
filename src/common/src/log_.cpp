@@ -9,6 +9,40 @@ namespace LabSpace
 {
     namespace Common
     {
+        //
+        // init the log4cplus
+        //
+        bool InitLog(const tstring& _configure, const tstring& _category)
+        {
+            try
+            {
+                if (g_logger)   return true;
+
+                if (!FileUtil::CanFileAccess(_configure))
+                {
+                    PRINT_MSG("Log configure file '" << _configure << "' is invalid.");
+                    return false;
+                }
+
+                log4cplus::initialize();
+                log4cplus::PropertyConfigurator::doConfigure(_configure);
+                g_logger = new log4cplus::Logger(log4cplus::Logger::getInstance(_category));
+
+                //log4cplus::ConfigureAndWatchThread(_configure, 60 * 1000);
+#ifdef WIN32
+                setlocale(LC_ALL, "chs");
+#endif
+            }
+            catch (...)
+            {
+                PRINT_MSG("ERROR: Fail to init log4plus.");// << e.what() << std::endl;
+                return false;
+            }
+
+            return true;
+        }
+
+
         std::mutex                          LogStream::s_listMutex;
         std::condition_variable             LogStream::s_listCV;
         std::list<BufferPtr>                LogStream::s_bufferList;

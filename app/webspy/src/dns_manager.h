@@ -1,24 +1,13 @@
-#ifndef HL_DNS_MANAGER_INCLUDE_H__
-#define HL_DNS_MANAGER_INCLUDE_H__
+#ifndef __HL_DNS_MANAGER_INCLUDE_H__
+#define __HL_DNS_MANAGER_INCLUDE_H__
 
-#include "common.h"
-#include "singleton.h"
-#include "sqlite_.h"
-
-#include <event2/dns.h>
-#include <event2/util.h>
-#include <event2/event.h>
-#include <thread>
-#include <list>
-#include <vector>
-
-using namespace LabSpace::Common;
+#include "basic_manager.h"
 
 
 /**
  * @Function: Keep the dns information which includes name, ip addresses, last visited time, status
  **/
-class CDNSManager : public ISingleton<CDNSManager>
+class CDNSManager : public CBasicManager, public ISingleton<CDNSManager>
 {
 public:
     CDNSManager();
@@ -30,7 +19,6 @@ public:
     bool addWebName(const string& _name);
 
 private:
-    #define DNS_RECORD_TABLE_NAME           "DNS_RECORDS"
     #define DNS_RECORD_TABLE_COL_ID         "ID"
     #define DNS_RECORD_TABLE_COL_NAME       "NAME"
     #define DNS_RECORD_TABLE_COL_CNAME      "CNAME"
@@ -39,19 +27,17 @@ private:
     #define DNS_RECORD_TABLE_COL_VISIT_TIME "LAST_VISIT_TIME"
     #define DNS_RECORD_TABLE_COL_STATUS     "STATUS"
 
-    bool isStop() { return m_stop; }  
 
     /**
      * @Function: do some init work such as open the database and prepare the libevent resource
      **/
-    bool init();
-    bool openDB(const string& _dbPath);   
+    virtual bool    __init__();
+    virtual string  __getTableCreateSql__();
 
     /**
      * @Function: use compile statement to add all the new web name to database
      **/
     bool addRecords();
-    int  doSql(const tchar* _sql, DB_CALLBACK _callback);
 
     string getPendingRecords();
 
@@ -73,8 +59,9 @@ private:
         enum STATUS_e
         {
             UNCHECK     = 0,
-            PROCESSING,
-            READY
+            PROCESSING,         // doing dns lookup
+            READY,              // dns lookup finished and has valid ips if possible
+            RESOLVED            // web page grabbed
         };
 
         u_int32     id;
@@ -91,10 +78,8 @@ private:
 
 private:
     static int          s_pendingLookupCount;
-    string              m_confDir;
-    CSqlLiteDB          m_dnsDB;
+ 
     std::thread         m_thread;
-    bool                m_stop;
 
     struct evdns_base*  m_dnsbase;
     struct event_base*  m_evbase;

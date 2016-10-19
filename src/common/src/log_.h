@@ -7,30 +7,85 @@
 #include "buffer_.h"
 #include "locker_.h"
 
+#include <log4cplus/logger.h>
+#include <log4cplus/loggingmacros.h>
+#include <log4cplus/configurator.h>
+#include <log4cplus/ndc.h>
+
 #include <list>
 #include <memory>
 
 using namespace LabSpace::Common;
+
+extern log4cplus::Logger* g_logger;
 
 
 #define PRINT_MSG(msg)  std::cerr   << TimeUtil::GetNowTimeStr() << "\t" \
                                     << StrUtil::GetFileName(__FILE__).c_str() << ":" << __LINE__ << " - " \
                                     << msg << endl;
 
-#define RM_LOG_ERROR(msg)    PRINT_MSG(msg)
+#ifdef LOG_FILE_LINE_INFORMATION
 
+#define L4C_LOG_TRACE(str)       {   \
+    if (g_logger) { LOG4CPLUS_TRACE(*g_logger, " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); }\
+}
+
+#define L4C_LOG_DEBUG(str)       {   \
+    if (g_logger) { LOG4CPLUS_DEBUG(*g_logger, " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); }\
+}
+
+#define L4C_LOG_INFO(str)        {   \
+    if (g_logger) { LOG4CPLUS_INFO(*g_logger,  " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str);  }\
+}
+
+#define L4C_LOG_WARNING(str)     {   \
+    if (g_logger) { LOG4CPLUS_WARN(*g_logger,  " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); } \
+}
+
+#define L4C_LOG_ERROR(str)     {   \
+    if (g_logger) { LOG4CPLUS_ERROR(*g_logger,  " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); } \
+}
+
+#else
+
+#define L4C_LOG_TRACE(str)       {   \
+    if (g_logger) { LOG4CPLUS_TRACE(*g_logger, " " << str); }   \
+}
+
+#define L4C_LOG_DEBUG(str)       {   \
+    if (g_logger) { LOG4CPLUS_DEBUG(*g_logger, " " << str); }   \
+}
+
+#define L4C_LOG_INFO(str)        {   \
+    if (g_logger) { LOG4CPLUS_INFO(*g_logger,  " " << str);  }  \
+}
+
+#define L4C_LOG_WARNING(str)     {   \
+    if (g_logger) { LOG4CPLUS_WARN(*g_logger,  " " << str); }   \
+}
+
+#define L4C_LOG_ERROR(str)     {   \
+    if (g_logger) { LOG4CPLUS_ERROR(*g_logger,  " " << str); }   \
+}
+
+#endif
+
+
+//
+// Check the value and log the error messages
+//
 #define LOG_LAST_ERRORMSG()                     \
 {   u_int32 err = Util::GetLastSysError();      \
-    RM_LOG_ERROR(Util::GetLastSysErrorMessage(err).c_str());  \
+    L4C_LOG_ERROR(Util::GetLastSysErrorMessage(err).c_str());  \
 }
 
 #define LOG_LAST_ERRORMSG_S(msg)                \
 {   u_int32 err = Util::GetLastSysError();      \
-    RM_LOG_ERROR(msg << ": " << Util::GetLastSysErrorMessage(err).c_str());\
+    L4C_LOG_ERROR(msg << ": " << Util::GetLastSysErrorMessage(err).c_str());\
 }
 
-#define LOG_ERRORMSG(errCode)           RM_LOG_ERROR(Util::GetLastSysErrorMessage(errCode).c_str());
-#define LOG_ERRORMSG_S(errCode, msg)    RM_LOG_ERROR(msg << ": " << Util::GetLastSysErrorMessage(errCode).c_str());
+#define LOG_ERRORMSG(errCode)           L4C_LOG_ERROR(Util::GetLastSysErrorMessage(errCode).c_str());
+#define LOG_ERRORMSG_S(errCode, msg)    L4C_LOG_ERROR(msg << ": " << Util::GetLastSysErrorMessage(errCode).c_str());
 
 #define LOG_LASTERROR_AND_RETURN_ERRCODE()      \
 {                                               \
@@ -64,12 +119,12 @@ using namespace LabSpace::Common;
 
 #define ON_ERROR_PRINT_MSG(expr, comp, error, msg)    \
     if (expr comp error)	{                   \
-        RM_LOG_ERROR(msg)                       \
+        L4C_LOG_ERROR(msg)                       \
     }
 
 #define ON_ERROR_PRINT_MSG_AND_DO(expr, comp, error, msg, action)    \
     if (expr comp error)	{                   \
-        RM_LOG_ERROR(msg)                       \
+        L4C_LOG_ERROR(msg)                       \
         action;	                                \
     }
 
@@ -81,10 +136,15 @@ using namespace LabSpace::Common;
     }
 
 
+/**
+ * @Function: My own logger function
+ **/
 namespace LabSpace
 {
     namespace Common
     {
+        bool InitLog(const tstring& _configure, const tstring& _category);
+
         #define LOG_BUFFER_SIZE         1024
         #define INIT_LOG_BUFFER_COUNT   100
         #define MAX_LOG_BUFFER_COUNT    1000

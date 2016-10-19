@@ -1,19 +1,49 @@
-project(webspy)
+set(PROJECT_NAME	webspy)
+project(${PROJECT_NAME})
+
+set(WEBSPY_SRC_FOLD ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(WEBSPY_SRC 		src/main.cpp
-					src/dns_manager.cpp)
+					src/basic_manager.cpp
+					src/dns_manager.cpp
+					src/web_voyager.cpp
+					src/web_server.cpp)
 
-set(WEBSPY_HEADER	src/dns_manager.h)
+set(WEBSPY_HEADER	src/config.h
+					src/global.h
+					src/global.cpp
+					src/basic_manager.h
+					src/dns_manager.h
+					src/web_voyager.h
+					src/web_server.h)
 
+set(WEBSPY_HTTP_SRC	src/http/basic.h
+					src/http/basic.cpp
+					src/http/request.h
+					src/http/request.cpp)
 
-include_directories("${PROJECT_ROOT_PATH}/3rdParty/libevent-2.0.21")
-include_directories("${PROJECT_ROOT_PATH}/3rdParty/libevent-2.0.21/include")
+include_directories("${PROJECT_ROOT_PATH}/3rdParty/libevent-2.1.6-beta")
+include_directories("${PROJECT_ROOT_PATH}/3rdParty/libevent-2.1.6-beta/include")
+include_directories("$(PROJECT_ROOT_PATH}/3rdParty/libevent-2.1.6-beta/compat")
 include_directories("${PROJECT_ROOT_PATH}/src/common/src")
 include_directories("${PROJECT_ROOT_PATH}/src/net/src")
 
-add_executable(webspy ${WEBSPY_SRC} ${WEBSPY_HEADER})					# set the source files
-add_dependencies(webspy common net)						# set the dependency libraries
-target_link_libraries(webspy libevent_core libevent_extras common net popt)			# link the libraries
+
+if (MSVC)
+	set(CMAKE_EXE_LINKER_FLAGS	"${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:\"LIBCMT\"")
+endif()
 
 
-set_target_properties (webspy PROPERTIES FOLDER app)	# set the project under folder app
+add_executable(${PROJECT_NAME} ${WEBSPY_SRC} ${WEBSPY_HEADER} ${WEBSPY_HTTP_SRC})			# set the source files
+add_dependencies(${PROJECT_NAME} common net)						# set the dependency libraries
+target_link_libraries(${PROJECT_NAME} libevent_core libevent_extras common net)
+target_link_libraries(${PROJECT_NAME} popt log4cplus.lib )			# link the libraries
+
+file(GLOB_RECURSE SRC_HTTP	"${WEBSPY_SRC_FOLD}/http/*.cpp"
+							"${WEBSPY_SRC_FOLD}/http/*.h")
+							
+
+add_library(${PROJECT_NAME}_HTTP ${SRC_HTTP})
+source_group("http"	FILES ${SRC_HTTP})
+
+set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER app)	# set the project under folder app

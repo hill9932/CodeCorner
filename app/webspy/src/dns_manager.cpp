@@ -5,12 +5,15 @@
 
 int CDNSManager::s_pendingLookupCount = 0;
 
+#define DNS_RECORD_DB_NAME      "dns_records.db"
+#define DNS_RECORD_TABLE_NAME   "DNS_RECORDS"
+
 CDNSManager::CDNSManager()
 {
-    m_stop    = false;
-    m_evbase  = NULL;
-    m_dnsbase = NULL;
-    m_confDir = FileUtil::GetAppDir() + "conf";
+    m_evbase    = NULL;
+    m_dnsbase   = NULL;
+    m_tableName = DNS_RECORD_TABLE_NAME;
+    m_dbName    = DNS_RECORD_DB_NAME;
 }
 
 CDNSManager::~CDNSManager()
@@ -19,63 +22,9 @@ CDNSManager::~CDNSManager()
     if (m_evbase)   event_base_free(m_evbase);
 }
 
-bool CDNSManager::openDB(const string& _dbPath)
-{
-    if (0 != m_dnsDB.open(_dbPath.c_str()))
-    {
-        RM_LOG_ERROR("Fail to open database: " << _dbPath);
-        return false;
-    }
-
-    if (0 == m_dnsDB.exec("PRAGMA synchronous = NORMAL", this, NULL) &&
-        0 == m_dnsDB.exec("PRAGMA journal_mode = WAL", this, NULL))
-    {
-    }
-
-    if (!m_dnsDB.isTableExist(DNS_RECORD_TABLE_NAME))
-    {
-        const char* sql = "CREATE TABLE "                                       \
-            DNS_RECORD_TABLE_NAME "("                                           \
-            DNS_RECORD_TABLE_COL_ID             " INTEGER PRIMARY KEY,"         \
-            DNS_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE,"        \
-            DNS_RECORD_TABLE_COL_CNAME          " TEXT,"                        \
-            DNS_RECORD_TABLE_COL_ADDRESS        " TEXT NOT NULL,"               \
-            DNS_RECORD_TABLE_COL_CREATE_TIME    " INT  NOT NULL,"               \
-            DNS_RECORD_TABLE_COL_VISIT_TIME     " INT  NOT NULL,"               \
-            DNS_RECORD_TABLE_COL_STATUS         " INT  NOT NULL);";
-
-        int z = m_dnsDB.exec(sql, this, NULL);
-        if (0 == z)
-        {
-            /*
-            sql = "CREATE INDEX index_FPT ON " FILE_STATUS_TABLE " (FIRST_PACKET_TIME)";
-            m_dbs[_index].exec(sql, this, NULL);
-            */
-        }
-        else
-        {
-            RM_LOG_ERROR("Fail to execute: " << sql);
-            return false;
-        }
-    }
-
-    return true;
-}
-
-bool CDNSManager::init()
+bool CDNSManager::__init__()
 {
     if (m_evbase && m_dnsbase)    return true;
-
-    if (!FileUtil::CreateAllDir(m_confDir))
-    {
-        LOG_ERROR_STREAM << "Fail to create folder: " << m_confDir;
-        return true;
-    }
-
-    string dbPath = m_confDir + "/";
-    dbPath += "dsn_records.db";
-    if (!openDB(dbPath))
-        return false;
     
     m_evbase = event_base_new();
     if (!m_evbase)
@@ -92,6 +41,19 @@ bool CDNSManager::init()
     }
     
     return true;
+}
+
+string  CDNSManager::__getTableCreateSql__()
+{
+    return "CREATE TABLE "                                       \
+        DNS_RECORD_TABLE_NAME "("                                           \
+        DNS_RECORD_TABLE_COL_ID             " INTEGER PRIMARY KEY,"         \
+        DNS_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE,"        \
+        DNS_RECORD_TABLE_COL_CNAME          " TEXT,"                        \
+        DNS_RECORD_TABLE_COL_ADDRESS        " TEXT NOT NULL,"               \
+        DNS_RECORD_TABLE_COL_CREATE_TIME    " INT  NOT NULL,"               \
+        DNS_RECORD_TABLE_COL_VISIT_TIME     " INT  NOT NULL,"               \
+        DNS_RECORD_TABLE_COL_STATUS         " INT  NOT NULL);";
 }
 
 int CDNSManager::GetDNSRecordCallback(void* _context, int _argc, char** _argv, char** _szColName)
@@ -195,22 +157,6 @@ void CDNSManager::LookupDNSCallback(int _errcode, struct evutil_addrinfo *_addr,
         event_base_loopexit(CDNSManager::GetInstance()->m_evbase, NULL);        
 }
 
-int CDNSManager::doSql(const tchar* _sql, DB_CALLBACK _callback)
-{
-    int z = 0;
-    do
-    {
-        z = m_dnsDB.exec(_sql, this, _callback);
-        if (z != 0 && z != SQLITE_BUSY)
-            ON_ERROR_PRINT_MSG_AND_DO(z, != , 0, "Fail to do " << _sql, SleepUS(1));
-
-        if (z == SQLITE_BUSY) SleepMS(1);
-
-    } while (z == SQLITE_BUSY && !isStop());
-
-    return z;
-}
-
 void CDNSManager::lookupDNS(const DNS_RECORD_t& _record)
 {
     struct evutil_addrinfo  hints;
@@ -234,11 +180,11 @@ bool CDNSManager::addRecords()
     CStdString sql = " INSERT INTO " DNS_RECORD_TABLE_NAME
         " VALUES (NULL, ?, ?, ?, ?, ?, ?);";
 
-    int z = m_dnsDB.compile(DNS_RECORD_TABLE_NAME, sql);
-    sqlite3_stmt* stmt = m_dnsDB.getStatment(DNS_RECORD_TABLE_NAME);
+    int z = m_basicDB.compile(DNS_RECORD_TABLE_NAME, sql);
+    sqlite3_stmt* stmt = m_basicDB.getStatment(DNS_RECORD_TABLE_NAME);
     if (!stmt)   return false;
 
-    m_dnsDB.beginTransact();
+    m_basicDB.beginTransact();
     for (int i = 0; i < m_newRecords.size(); ++i)
     {
         z = sqlite3_reset(stmt);
@@ -253,12 +199,12 @@ bool CDNSManager::addRecords()
             z = sqlite3_step(stmt);
             if (SQLITE_OK != z && SQLITE_DONE != z)
             {
-                const char* msg = sqlite3_errmsg(m_dnsDB);
+                const char* msg = sqlite3_errmsg(m_basicDB);
                 LOG_ERROR_STREAM << msg;
             }
         }
     }
-    m_dnsDB.commit();
+    m_basicDB.commit();
     m_newRecords.clear();
 
     return true;
@@ -277,11 +223,11 @@ bool CDNSManager::updateRecords()
         DNS_RECORD_TABLE_COL_STATUS "=?"          \
         " WHERE ID = ?;";
 
-    int z = m_dnsDB.compile(DNS_RECORD_TABLE_NAME, sql);
-    sqlite3_stmt* stmt = m_dnsDB.getStatment(DNS_RECORD_TABLE_NAME);
+    int z = m_basicDB.compile(DNS_RECORD_TABLE_NAME, sql);
+    sqlite3_stmt* stmt = m_basicDB.getStatment(DNS_RECORD_TABLE_NAME);
     if (!stmt)   return false;
 
-    m_dnsDB.beginTransact();
+    m_basicDB.beginTransact();
     list<DNS_RECORD_t>::iterator it = m_pendingRecords.begin();
     for (; it != m_pendingRecords.end(); ++it)
     {
@@ -298,19 +244,19 @@ bool CDNSManager::updateRecords()
             z = sqlite3_step(stmt);
             if (SQLITE_OK != z && SQLITE_DONE != z)
             {
-                const char* msg = sqlite3_errmsg(m_dnsDB);
+                const char* msg = sqlite3_errmsg(m_basicDB);
                 LOG_ERROR_STREAM << msg;
                 break;
             }
         }
     }
-    m_dnsDB.commit();
+    m_basicDB.commit();
     m_pendingRecords.clear();
 
     return true;
 }
 
-#define PROCESS_RECORDS_BATCH_COUNT     100
+#define PROCESS_RECORDS_BATCH_COUNT     20
 
 void CDNSManager::threadFunc()
 {
