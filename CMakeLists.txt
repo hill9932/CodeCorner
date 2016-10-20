@@ -25,9 +25,6 @@ if (UNIX)
 elseif (MSVC)
     add_definitions(-DWIN32)
 	add_definitions(-DWIN32_LEAN_AND_MEAN)
-	
-	set(CMAKE_EXE_LINKER_FLAGS	"${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:\"LIBCMT\"")
-
 
 	if (MSVC12)
 		set(3DPARTY_LIB_DIR "vs2013/"${CMAKE_BUILD_TYPE})
@@ -41,6 +38,7 @@ include_directories("${PROJECT_ROOT_PATH}/3rdParty/boost_1_60_0")
 include_directories("${PROJECT_ROOT_PATH}/3rdParty/lua-5.2.3")
 include_directories("${PROJECT_ROOT_PATH}/3rdParty/gtest-1.7.0/include")
 include_directories("${PROJECT_ROOT_PATH}/3rdParty/log4cplus-1.1.2/include")
+include_directories("${PROJECT_ROOT_PATH}/3rdParty/tbb42/include")
 include_directories("${PROJECT_ROOT_PATH}/test/incl")
 
 link_directories("${PROJECT_ROOT_PATH}/lib/${3DPARTY_LIB_DIR}")

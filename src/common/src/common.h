@@ -43,4 +43,6 @@ namespace LabSpace
     }
 }
 
+using namespace LabSpace::Common;
+
 #endif

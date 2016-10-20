@@ -3,6 +3,8 @@
 
 #include "basic_manager.h"
 #include "http/request.h"
+#include "memory_creator.hpp"
+
 
 /**
  * @Function: This class download the http pages according to the dns names got from database
@@ -65,12 +67,17 @@ private:
         struct evhttp_request       *req;
         RequestStatus_e             status;
 
+    private:
         HTTPClient_t();
         ~HTTPClient_t();
-    };
 
-    HTTPClient_t* createHttpRequset(const char* _url, int _flag, const char* _contentType, const char* _data);
-    static bool startRequest(HTTPClient_t* _hc);
+        friend class CMemCreator<HTTPClient_t>;
+        friend class CMemDeleter<HTTPClient_t>;
+    };
+    typedef shared_ptr<HTTPClient_t>    HTTPClientPtr;
+
+    HTTPClientPtr createHttpRequset(const char* _url, int _flag, const char* _contentType, const char* _data);
+    static bool startRequest(HTTPClientPtr& _hc);
 
 private:
     std::thread         m_thread;

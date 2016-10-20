@@ -47,6 +47,8 @@ bool CWebVoyager::__init__()
         return false;
     }
 
+    CMemCreator<HTTPClient_t>::GetInstance()->init();
+
     return true;
 }
 
@@ -116,6 +118,7 @@ CWebVoyager::HTTPClient_t::HTTPClient_t()
     conn    = NULL;
     req     = NULL;
     status  = UNKNOWN;
+    type    = IHttpRequest::Type::NONE;
 }
 
 CWebVoyager::HTTPClient_t::~HTTPClient_t()
@@ -147,7 +150,7 @@ void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
         case HTTP_MOVETEMP:
         {
             const char* newLocation = evhttp_find_header(_request->input_headers, Response::Header::Location::Value);
-            HTTPClient_t* newHC = CWebVoyager::GetInstance()->createHttpRequset(newLocation, 0, NULL, NULL);
+            HTTPClientPtr newHC = CWebVoyager::GetInstance()->createHttpRequset(newLocation, 0, NULL, NULL);
             startRequest(newHC);
 
             break;
@@ -155,10 +158,8 @@ void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
     }
 }
 
-bool CWebVoyager::startRequest(HTTPClient_t* _hc)
+bool CWebVoyager::startRequest(HTTPClientPtr& _hc)
 {
-    if (!_hc)   return false;
-
     L4C_LOG_INFO("Request " << _hc->url);
 
     const char* path = evhttp_uri_get_path(_hc->uri);
@@ -185,11 +186,11 @@ bool CWebVoyager::startRequest(HTTPClient_t* _hc)
     return true;
 }
 
-CWebVoyager::HTTPClient_t* CWebVoyager::createHttpRequset(const char* _url, int _flag, const char* _contentType, const char* _data)
+CWebVoyager::HTTPClientPtr CWebVoyager::createHttpRequset(const char* _url, int _flag, const char* _contentType, const char* _data)
 {
     if (!_url)  return NULL;
 
-    HTTPClient_t* hc(new HTTPClient_t);
+    HTTPClientPtr hc = CMemCreator<HTTPClient_t>::GetInstance()->create();
     hc->url  = _url;
     hc->uri  = evhttp_uri_parse(hc->url.c_str());
 
@@ -197,9 +198,9 @@ CWebVoyager::HTTPClient_t* CWebVoyager::createHttpRequset(const char* _url, int 
     int port = evhttp_uri_get_port(hc->uri);
     if (port == -1) port = 80;
 
-    hc->type        = IHttpRequest::Type::GET;
-    hc->conn        = evhttp_connection_base_new(m_evbase, NULL, host, port);
-    hc->req         = evhttp_request_new(HttpRequestCB, (void*)hc);
+    hc->type    = IHttpRequest::Type::GET;
+    hc->conn    = evhttp_connection_base_new(m_evbase, NULL, host, port);
+    hc->req     = evhttp_request_new(HttpRequestCB, (void*)hc.get());
 
     ON_ERROR_PRINT_MSG_AND_DO(hc->uri,  == , NULL, "Fail to parse " << host, return false);
     ON_ERROR_PRINT_MSG_AND_DO(hc->conn, == , NULL, "Fail to call evhttp_connection_base_new().", return false);
@@ -209,7 +210,6 @@ CWebVoyager::HTTPClient_t* CWebVoyager::createHttpRequset(const char* _url, int 
     {
         if (!_contentType || !_data)
         {
-            delete hc;
             return NULL;
         }
 
@@ -236,7 +236,7 @@ CWebVoyager::HTTPClient_t* CWebVoyager::createHttpRequset(const char* _url, int 
 
 bool CWebVoyager::loadPage()
 {
-    HTTPClient_t* hc = createHttpRequset("http://blog.csdn.net/pcliuguangtao/article/details/9360331", 0, NULL, NULL);
+    HTTPClientPtr hc = createHttpRequset("http://blog.csdn.net/pcliuguangtao/article/details/9360331", 0, NULL, NULL);
     CHttpUtils::ShowUrlInfo(hc->uri);
 
     startRequest(hc);

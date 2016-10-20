@@ -16,7 +16,8 @@ set(WEBSPY_HEADER	src/basic_manager.h
 
 set(WEBSPY_BASIC	src/config.h
 					src/global.h
-					src/global.cpp)
+					src/global.cpp
+					src/memory_creator.hpp)
 					
 set(WEBSPY_HTTP_SRC	src/http/basic.h
 					src/http/basic.cpp
@@ -28,7 +29,7 @@ set(WEBSPY_TASK_SRC	src/task/task.h
 					
 include_directories("${PROJECT_ROOT_PATH}/3rdParty/libevent-2.1.6-beta")
 include_directories("${PROJECT_ROOT_PATH}/3rdParty/libevent-2.1.6-beta/include")
-include_directories("$(PROJECT_ROOT_PATH}/3rdParty/libevent-2.1.6-beta/compat")
+include_directories("${PROJECT_ROOT_PATH}/3rdParty/libevent-2.1.6-beta/compat")
 include_directories("${PROJECT_ROOT_PATH}/src/common/src")
 include_directories("${PROJECT_ROOT_PATH}/src/net/src")
 
@@ -38,10 +39,19 @@ if (MSVC)
 endif()
 
 
-add_executable(${PROJECT_NAME} ${WEBSPY_SRC} ${WEBSPY_HEADER} ${WEBSPY_BASIC} ${WEBSPY_HTTP_SRC})			# set the source files
-add_dependencies(${PROJECT_NAME} common net)						# set the dependency libraries
-target_link_libraries(${PROJECT_NAME} libevent_core libevent_extras common net)
-target_link_libraries(${PROJECT_NAME} popt log4cplus.lib )			# link the libraries
+add_executable(${PROJECT_NAME} 	${WEBSPY_SRC} 
+								${WEBSPY_HEADER} 
+								${WEBSPY_BASIC} 
+								${WEBSPY_HTTP_SRC} 
+								${WEBSPY_TASK_SRC})			# set the source files
+add_dependencies(${PROJECT_NAME} common net)				# set the dependency libraries
+
+target_link_libraries(${PROJECT_NAME} 	libevent_core 
+										libevent_extras 
+										common 
+										net
+										popt
+										log4cplus)
 
 file(GLOB_RECURSE SRC_HTTP	"${WEBSPY_SRC_FOLD}/http/*.cpp"
 							"${WEBSPY_SRC_FOLD}/http/*.h")	
