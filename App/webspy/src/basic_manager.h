@@ -4,6 +4,7 @@
 #include "common.h"
 #include "singleton.h"
 #include "sqlite_.h"
+#include "global.h"
 
 #include <event2/dns.h>
 #include <event2/util.h>
@@ -23,7 +24,6 @@ class CBasicManager
 protected:
     CBasicManager();
 
-    void setConfPath(const tstring& _path)  { m_confDir = _path; }
     void stop()   { m_stop = true; }
     bool isStop() { return m_stop; }
     bool init();
@@ -39,7 +39,6 @@ private:
     bool openDB(const string& _dbPath);
 
 protected:
-    string              m_confDir;
     string              m_dbName;
     string              m_tableName;
     CSqlLiteDB          m_basicDB;

@@ -1,12 +1,9 @@
 #include "basic_manager.h"
-#include "file_log.h"
-#include "file_util.h"
 #include "stdString.h"
 
 CBasicManager::CBasicManager()
 {
     m_stop = false;
-    m_confDir = FileUtil::GetAppDir() + "conf";
 }
 
 bool CBasicManager::openDB(const string& _dbPath)
@@ -51,13 +48,7 @@ bool CBasicManager::openDB(const string& _dbPath)
 
 bool CBasicManager::init()
 {
-    if (!FileUtil::CreateAllDir(m_confDir))
-    {
-        LOG_ERROR_STREAM << "Fail to create folder: " << m_confDir;
-        return true;
-    }
-
-    string dbPath = m_confDir + "/";
+    string dbPath = g_AppConfig.dbPath;
     dbPath += m_dbName; 
     if (!openDB(dbPath))
         return false;

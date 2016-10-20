@@ -2,7 +2,7 @@
 #define __HL_WEB_VOYAGER_INCLUDE_H__
 
 #include "basic_manager.h"
-
+#include "http/request.h"
 
 /**
  * @Function: This class download the http pages according to the dns names got from database
@@ -35,32 +35,42 @@ private:
     **/
     bool loadPage();
 
-    void* startHttpRequset(const char* _url, int _flag, const char* _type, const char* _data);
 
     /**
     * @Function: the thread function of lookup
     */
     void threadFunc();
 
-    static void DownloadCallback(struct evhttp_request* _request,          void* _context);
+    static void HttpRequestCB(struct evhttp_request* _request,  void* _arg);
     static int  ReadHeaderDoneCallback(struct evhttp_request* _request,      void* _context);
     static void ReadChunkCallback(struct evhttp_request* _request,           void* _context);
     static void RemoteRequestErrorCallback(enum evhttp_request_error _error, void* _context);
     static void RemoteConnectionCloseCallback(struct evhttp_connection* _connection, void* _context);
 
 private:
+    enum RequestStatus_e
+    {
+        UNKNOWN     = 0,
+        INITIALIZED = 1,
+        PROCESSING  = 2,
+        FINISHED    = 10
+    };
+
     struct HTTPClient_t
     {
+        tstring                     url;
+        IHttpRequest::Type          type;
         struct evhttp_uri           *uri;
         struct evhttp_connection    *conn;
         struct evhttp_request       *req;
-        struct evbuffer             *buf;
-        string query;
-        bool   finished;
+        RequestStatus_e             status;
 
         HTTPClient_t();
         ~HTTPClient_t();
     };
+
+    HTTPClient_t* createHttpRequset(const char* _url, int _flag, const char* _contentType, const char* _data);
+    static bool startRequest(HTTPClient_t* _hc);
 
 private:
     std::thread         m_thread;

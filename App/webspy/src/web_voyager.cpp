@@ -1,6 +1,4 @@
 #include "web_voyager.h"
-#include "stdString.h"
-#include "file_log.h"
 
 #include <evhttp.h>
 #include <event2/http.h>
@@ -31,21 +29,21 @@ bool CWebVoyager::__init__()
 
     if (!event_init())
     {
-        LOG_ERROR_STREAM << "Fail to init libevent.";
+        L4C_LOG_ERROR("Fail to init libevent.");
         return false;
     }
 
     m_evbase = event_base_new();
     if (!m_evbase)
     {
-        LOG_ERROR_STREAM << "Fail to call event_base_new().";
+        L4C_LOG_ERROR("Fail to call event_base_new().");
         return false;
     }
 
     m_dnsbase = evdns_base_new(m_evbase, 1);
     if (!m_dnsbase)
     {
-        LOG_ERROR_STREAM << "Fail to call evdns_base_new().";
+        L4C_LOG_ERROR("Fail to call evdns_base_new().");
         return false;
     }
 
@@ -102,14 +100,6 @@ void CWebVoyager::ReadChunkCallback(struct evhttp_request* _request, void* _cont
     }
 }
 
-void CWebVoyager::DownloadCallback(struct evhttp_request* _request, void* _context)
-{
-    HTTPClient_t *hc = (HTTPClient_t *)_context;
-    hc->finished = true;
-
-    event_base_loopexit(CWebVoyager::GetInstance()->m_evbase, NULL);
-}
-
 void CWebVoyager::RemoteRequestErrorCallback(enum evhttp_request_error _error, void* _context)
 {
     event_base_loopexit(CWebVoyager::GetInstance()->m_evbase, NULL);
@@ -125,9 +115,7 @@ CWebVoyager::HTTPClient_t::HTTPClient_t()
     uri     = NULL;
     conn    = NULL;
     req     = NULL;
-    buf     = NULL;
-    query   = "/";
-    finished = false;
+    status  = UNKNOWN;
 }
 
 CWebVoyager::HTTPClient_t::~HTTPClient_t()
@@ -135,49 +123,123 @@ CWebVoyager::HTTPClient_t::~HTTPClient_t()
     if (uri)    evhttp_uri_free(uri);
     if (req)    evhttp_request_free(req);
     if (conn)   evhttp_connection_free(conn);
-    if (buf)    evbuffer_free(buf);
 }
 
-void* CWebVoyager::startHttpRequset(const char* _url, int _flag, const char* _type, const char* _data)
+void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
 {
-    if (!_url || !_type || !_data)  return NULL;
+    HTTPClient_t* hc = (HTTPClient_t*)_arg;
+    if (!_request || !_arg)
+    {
+        L4C_LOG_ERROR("Invalid parameters.");
+        return;
+    }
 
-//    struct http_request_get *http_req_get = http_request_new(base, url, req_get_flag, content_type, data);
- //   start_url_request(http_req_get, req_get_flag);
+    L4C_LOG_INFO(hc->url << ": " << _request->response_code);
 
- //   return http_req_get;
-    return NULL;
+    switch (_request->response_code)
+    {
+        case HTTP_OK:
+        {
+            CHttpUtils::ShowRequestInfo(_request);
+            break;
+        }
+
+        case HTTP_MOVETEMP:
+        {
+            const char* newLocation = evhttp_find_header(_request->input_headers, Response::Header::Location::Value);
+            HTTPClient_t* newHC = CWebVoyager::GetInstance()->createHttpRequset(newLocation, 0, NULL, NULL);
+            startRequest(newHC);
+
+            break;
+        }
+    }
+}
+
+bool CWebVoyager::startRequest(HTTPClient_t* _hc)
+{
+    if (!_hc)   return false;
+
+    L4C_LOG_INFO("Request " << _hc->url);
+
+    const char* path = evhttp_uri_get_path(_hc->uri);
+    if (_hc->type == IHttpRequest::Type::GET)
+    {
+        const char* query = evhttp_uri_get_query(_hc->uri);
+        tstring pathQuery;
+
+        if (!query && !path)
+        {
+            pathQuery  = path;
+            pathQuery += "?";
+            pathQuery += query;
+        }
+
+        evhttp_make_request(_hc->conn, _hc->req, EVHTTP_REQ_GET, pathQuery.empty() ? "/" : pathQuery.c_str());
+    }
+    else if (_hc->type == IHttpRequest::Type::POST)
+    {
+        evhttp_make_request(_hc->conn, _hc->req, EVHTTP_REQ_POST, path ? "/" : path);
+    }
+
+    _hc->status = PROCESSING;
+    return true;
+}
+
+CWebVoyager::HTTPClient_t* CWebVoyager::createHttpRequset(const char* _url, int _flag, const char* _contentType, const char* _data)
+{
+    if (!_url)  return NULL;
+
+    HTTPClient_t* hc(new HTTPClient_t);
+    hc->url  = _url;
+    hc->uri  = evhttp_uri_parse(hc->url.c_str());
+
+    const char* host = evhttp_uri_get_host(hc->uri);
+    int port = evhttp_uri_get_port(hc->uri);
+    if (port == -1) port = 80;
+
+    hc->type        = IHttpRequest::Type::GET;
+    hc->conn        = evhttp_connection_base_new(m_evbase, NULL, host, port);
+    hc->req         = evhttp_request_new(HttpRequestCB, (void*)hc);
+
+    ON_ERROR_PRINT_MSG_AND_DO(hc->uri,  == , NULL, "Fail to parse " << host, return false);
+    ON_ERROR_PRINT_MSG_AND_DO(hc->conn, == , NULL, "Fail to call evhttp_connection_base_new().", return false);
+    ON_ERROR_PRINT_MSG_AND_DO(hc->req,  == , NULL, "Fail to call evhttp_request_new().", return false);
+
+    if (hc->type == IHttpRequest::Type::POST)
+    {
+        if (!_contentType || !_data)
+        {
+            delete hc;
+            return NULL;
+        }
+
+        evbuffer_add(hc->req->output_buffer, _data, strlen(_data));
+        evhttp_add_header(hc->req->output_headers, Request::Content::ContentType::Value, _contentType);
+    }
+
+    //
+    // set the header properties
+    //
+    evhttp_add_header(hc->req->output_headers, Request::Header::Host::Value, host);
+
+    /*
+    evhttp_connection_set_timeout(hc->conn, 5);
+    evhttp_connection_set_closecb(hc->conn, RemoteConnectionCloseCallback, hc);
+    evhttp_request_set_header_cb(hc->req, ReadHeaderDoneCallback);
+    evhttp_request_set_chunked_cb(hc->req, ReadChunkCallback);
+    evhttp_request_set_error_cb(hc->req, RemoteRequestErrorCallback);
+    */
+
+    hc->status = INITIALIZED;
+    return hc;
 }
 
 bool CWebVoyager::loadPage()
 {
-    shared_ptr<HTTPClient_t> hc(new HTTPClient_t);
+    HTTPClient_t* hc = createHttpRequset("http://blog.csdn.net/pcliuguangtao/article/details/9360331", 0, NULL, NULL);
+    CHttpUtils::ShowUrlInfo(hc->uri);
 
-    struct timeval tv = { 3, 5000 };
-    const char *host = "www.sina.com.cn";
-    unsigned int port = 80;
-
-    hc->uri  = evhttp_uri_parse(host);
-    hc->conn = evhttp_connection_base_new(m_evbase, m_dnsbase, host, port);
-    hc->req  = evhttp_request_new(DownloadCallback, hc.get());  
-    hc->buf  = evbuffer_new();
-
-    ON_ERROR_PRINT_MSG_AND_DO(hc->uri , == , NULL, "Fail to parse " << host, return false);
-    ON_ERROR_PRINT_MSG_AND_DO(hc->conn, == , NULL, "Fail to call evhttp_connection_base_new().", return false);
-    ON_ERROR_PRINT_MSG_AND_DO(hc->req,  == , NULL, "Fail to call evhttp_request_new().", return false);
-    ON_ERROR_PRINT_MSG_AND_DO(hc->buf,  == , NULL, "Fail to call evbuffer_new().", return false);
-
-    evhttp_connection_set_timeout(hc->conn, 5);
-    evhttp_connection_set_closecb(hc->conn, RemoteConnectionCloseCallback, hc.get());
-
-    evhttp_request_set_header_cb(hc->req,  ReadHeaderDoneCallback);
-    evhttp_request_set_chunked_cb(hc->req, ReadChunkCallback);
-    evhttp_request_set_error_cb(hc->req, RemoteRequestErrorCallback);
-
-    evhttp_add_header(hc->req->output_headers, "Host", host);
-    evhttp_add_header(hc->req->output_headers, "Content-Length", "0");
-    evhttp_make_request(hc->conn, hc->req, EVHTTP_REQ_GET, hc->query.c_str());
-
+    startRequest(hc);
 
     event_base_dispatch(m_evbase);
     return true;
@@ -189,7 +251,6 @@ void CWebVoyager::threadFunc()
 {
     while (!isStop())
     {
-        CStdString sql;
         loadPage();
     }
 }

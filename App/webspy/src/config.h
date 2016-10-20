@@ -7,6 +7,7 @@ struct AppConfig_t
 {
     tstring     configFile;
     tstring     logFile;
+    tstring     dbPath;
 };
 
 #endif

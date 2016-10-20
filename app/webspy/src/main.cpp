@@ -5,7 +5,6 @@
 
 #include <popt/popt.h>
 
-using namespace LabSpace::Net;
 
 /**
  * @Function: Set the default settings
@@ -13,7 +12,10 @@ using namespace LabSpace::Net;
 void InitConfig()
 {
     g_AppConfig.configFile  = FileUtil::GetAppDir() + "config/webspy.lua";
-    g_AppConfig.logFile     = FileUtil::GetAppDir() + "config/web_spy_log4cplus.properties";
+    g_AppConfig.logFile     = FileUtil::GetAppDir() + "config/webspy_log4cplus.properties";
+    g_AppConfig.dbPath      = FileUtil::GetAppDir() + "db";
+
+    FileUtil::CreateAllDir(g_AppConfig.dbPath);
 }
 
 
@@ -22,8 +24,13 @@ void InitConfig()
  **/
 bool LoadConfig(int _argc, char* _argv[])
 {
+    InitConfig();
+
     char* configFileName = NULL;
 
+    //
+    // load the settings from command lines
+    //
     struct poptOption table[] =
     {
         { "config-file",
@@ -51,12 +58,20 @@ bool LoadConfig(int _argc, char* _argv[])
 
     if (configFileName) g_AppConfig.configFile = configFileName;
 
+    //
+    // load the settings from config file
+    //
+
     return true;
 }
 
 
 int main(int _argc, char* _argv[])
 {
+#ifdef WIN32
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
     if (!LoadConfig(_argc, _argv))
     {
         PRINT_MSG("Fail to load the app config.");
@@ -64,15 +79,28 @@ int main(int _argc, char* _argv[])
     }
 
     if (!InitLog(g_AppConfig.logFile, "WebSpy"))
+    {
+        PRINT_MSG("Fail to init log at " << g_AppConfig.logFile);
         return -1;
+    }
 
-    if (0 != CInetAddr::init())
+    L4C_LOG_INFO("Welcome to use webspy.");
+
+    if (0 != Net::CInetAddr::init())
     {
         L4C_LOG_ERROR("Fail to init inet.");
         return -1;
     }
+    /*
+    struct event_base* base = event_base_new();
 
+    start_http_requset(base,
+        "http://blog.csdn.net/pcliuguangtao/article/details/9360331",
+        REQUEST_GET_FLAG,
+        NULL, NULL);
 
+    event_base_dispatch(base);
+    */
 //     CDNSManager* dnsManager = CDNSManager::GetInstance();
 //     dnsManager->addWebName("www.sina.com.cn");
 //     dnsManager->start();
