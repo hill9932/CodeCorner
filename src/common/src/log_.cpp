@@ -30,7 +30,7 @@ namespace LabSpace
 
                 //log4cplus::ConfigureAndWatchThread(_configure, 60 * 1000);
 #ifdef WIN32
-                setlocale(LC_ALL, "chs");
+                setlocale(LC_ALL, "");
 #endif
             }
             catch (...)

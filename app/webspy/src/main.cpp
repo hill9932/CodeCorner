@@ -1,5 +1,4 @@
 #include "global.h"
-#include "inetaddr.h"
 #include "dns_manager.h"
 #include "web_voyager.h"
 
@@ -84,31 +83,18 @@ int main(int _argc, char* _argv[])
         return -1;
     }
 
-    L4C_LOG_INFO("Welcome to use webspy.");
-
-    if (0 != Net::CInetAddr::init())
+    if (!Network::InitNetWork())
     {
-        L4C_LOG_ERROR("Fail to init inet.");
+        L4C_LOG_ERROR("Fail to init the newtork.");
         return -1;
     }
-    /*
-    struct event_base* base = event_base_new();
 
-    start_http_requset(base,
-        "http://blog.csdn.net/pcliuguangtao/article/details/9360331",
-        REQUEST_GET_FLAG,
-        NULL, NULL);
-
-    event_base_dispatch(base);
-    */
-//     CDNSManager* dnsManager = CDNSManager::GetInstance();
-//     dnsManager->addWebName("www.sina.com.cn");
-//     dnsManager->start();
+    L4C_LOG_INFO("Welcome to use webspy.");
 
     CWebVoyager* webVoyager = CWebVoyager::GetInstance();
     webVoyager->start();
 
-//     dnsManager->join();
+
     webVoyager->join();
     return 0;
 }
@@ -128,3 +114,12 @@ int main(int _argc, char* _argv[])
     m_logger.setLogPath(logPath);
     m_logger.start();
 */
+
+
+/**
+ * @Function: use dns lookup
+     CDNSManager* dnsManager = CDNSManager::GetInstance();
+     dnsManager->addWebName("www.sina.com.cn");
+     dnsManager->start();
+     dnsManager->join();
+ */

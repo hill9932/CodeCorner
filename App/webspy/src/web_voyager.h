@@ -2,8 +2,7 @@
 #define __HL_WEB_VOYAGER_INCLUDE_H__
 
 #include "basic_manager.h"
-#include "http/request.h"
-#include "memory_creator.hpp"
+#include "task/digest_task.h"
 
 
 /**
@@ -17,6 +16,11 @@ public:
 
     bool start();
     void join();
+
+    void swap(vector<HTTPClientPtr>& _v)
+    {
+        _v.swap(m_finishedReqPool);
+    }
 
 private:
     #define VOYAGER_RECORD_TABLE_COL_ID         "ID"
@@ -41,7 +45,7 @@ private:
     /**
     * @Function: the thread function of lookup
     */
-    void threadFunc();
+    void spiderThreadFunc();
 
     static void HttpRequestCB(struct evhttp_request* _request,  void* _arg);
     static int  ReadHeaderDoneCallback(struct evhttp_request* _request,      void* _context);
@@ -50,40 +54,26 @@ private:
     static void RemoteConnectionCloseCallback(struct evhttp_connection* _connection, void* _context);
 
 private:
-    enum RequestStatus_e
-    {
-        UNKNOWN     = 0,
-        INITIALIZED = 1,
-        PROCESSING  = 2,
-        FINISHED    = 10
-    };
+    HTTPClientPtr createHttpRequset(
+        const char* _url, 
+        IHttpRequest::Type _requestType, 
+        int _flag, 
+        const char* _contentType, 
+        const char* _data);
 
-    struct HTTPClient_t
-    {
-        tstring                     url;
-        IHttpRequest::Type          type;
-        struct evhttp_uri           *uri;
-        struct evhttp_connection    *conn;
-        struct evhttp_request       *req;
-        RequestStatus_e             status;
-
-    private:
-        HTTPClient_t();
-        ~HTTPClient_t();
-
-        friend class CMemCreator<HTTPClient_t>;
-        friend class CMemDeleter<HTTPClient_t>;
-    };
-    typedef shared_ptr<HTTPClient_t>    HTTPClientPtr;
-
-    HTTPClientPtr createHttpRequset(const char* _url, int _flag, const char* _contentType, const char* _data);
-    static bool startRequest(HTTPClientPtr& _hc);
+    bool startRequest(HTTPClientPtr& _hc);
+    void finishRequest(HTTPClientPtr& _hc);
 
 private:
-    std::thread         m_thread;
+    std::thread         m_spiderThread;
     struct evdns_base*  m_dnsbase;
     struct event_base*  m_evbase;
 
+    vector<HTTPClientPtr>   m_finishedReqPool;
+    std::mutex              m_poolMutex;
+
+    CFirstTask              m_firstTask;
+    CDigestTask             m_digestTask;
 };
 
 #endif

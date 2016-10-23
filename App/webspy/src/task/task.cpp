@@ -3,7 +3,7 @@
 
 CTaskManager::CTaskManager()
 {
-    addTask(m_watchTask);
+    m_stop = false;
 }
 
 void CTaskManager::addTask(CTask& _task)
@@ -23,12 +23,6 @@ bool CTaskManager::start()
 
     m_thread = std::thread(&CTaskManager::threadFunc, this);
     return m_thread.joinable();
-}
-
-bool CTaskManager::stop()
-{
-    m_watchTask.stop();
-    return true;
 }
 
 void CTaskManager::join()

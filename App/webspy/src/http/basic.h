@@ -34,6 +34,8 @@ typedef Private::name_<void> name_;
 
 namespace Network
 {
+    bool InitNetWork();
+
     namespace Http
     {
         namespace Request

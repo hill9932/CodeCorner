@@ -48,7 +48,7 @@ bool CBasicManager::openDB(const string& _dbPath)
 
 bool CBasicManager::init()
 {
-    string dbPath = g_AppConfig.dbPath;
+    string dbPath = g_AppConfig.dbPath + "/";
     dbPath += m_dbName; 
     if (!openDB(dbPath))
         return false;

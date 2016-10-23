@@ -17,5 +17,6 @@ CWebServer::~CWebServer()
 
 bool CWebServer::__init__()
 {
+    // http://blog.csdn.net/toontong/article/details/6029151
     return true;
 }

@@ -1,9 +1,22 @@
 #include "basic.h"
 #include "log_.h"
+#include "inetaddr.h"
 
+#include <regex>
+#include <event2/thread.h>
 
 namespace Network
 {
+    bool InitNetWork()
+    {
+#ifdef WIN32
+        evthread_use_windows_threads();
+#else
+        evthread_use_pthreads();
+#endif
+        return 0 == LabSpace::Net::CInetAddr::init();
+    }
+
     namespace Http
     {
         void CHttpUtils::ShowRequestHeadInfo(const struct evkeyvalq* _header)
@@ -24,12 +37,9 @@ namespace Network
             if (!_request)  return;
 
             ShowRequestHeadInfo(_request->output_headers);
-
-            /*
-            struct evbuffer* buf = evhttp_request_get_input_buffer(_request);
+            
+            struct evbuffer* evbuf = evhttp_request_get_input_buffer(_request);
             L4C_LOG_TRACE("Body size = " << _request->body_size);
-            L4C_LOG_TRACE("HTML Body = " << evbuffer_pullup(buf, -1));
-            */
         }
 
         void CHttpUtils::ShowUrlInfo(const struct evhttp_uri* _uri)

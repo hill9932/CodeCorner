@@ -12,6 +12,8 @@ class CTask : public tbb::filter
 public:
     CTask(bool _isSerial) : filter(_isSerial)
     {}
+
+    bool virtual init() { return true; }
 };
 
 
@@ -36,33 +38,6 @@ public:
 
 
 /**
- * @Function: This task do nothing except decide when to stop
- **/
-class CWatchTask : public CSerialTask
-{
-public:
-    CWatchTask()
-    {
-        m_stop = false;
-    }
-
-    void* operator()(void* _item)
-    {
-        if (m_stop) return NULL;
-        return _item;
-    }
-
-    void stop()
-    {
-        m_stop = true;
-    }
-
-private:
-    bool m_stop;
-};
-
-
-/**
  * @Function: run the tbb pipeline
  */
 class CTaskManager : public ISingleton<CTaskManager>
@@ -71,7 +46,8 @@ public:
     CTaskManager();
 
     bool start();   // start the pipeline
-    bool stop();    // stop the pipeline
+    void stop()     { m_stop = true; }
+    bool isStop()   { return m_stop; }
     void join();
 
     void addTask(CTask& _task);
@@ -82,7 +58,7 @@ private:
 private:
     tbb::pipeline   m_pipeline;
     std::thread     m_thread;
-    CWatchTask      m_watchTask;
+    bool            m_stop;
 };
 
 #endif

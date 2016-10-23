@@ -34,9 +34,13 @@ public:
         m_memPool.push_back(MemPtr(p, NoneDeleter<T>()));
     }
 
+    void swap(vector<MemPtr>& _v)
+    {
+        _v.swap(m_memPool);
+    }
+
 private:
     vector<MemPtr>  m_memPool;
-
 };
 
 
@@ -61,15 +65,23 @@ public:
     {
         SCOPED_GUARD(m_poolMutex);
 
-        if (m_memPool.size() == 0)   return MemPtr();
+        if (m_memPool.size() == 0)
+        {
+            CMemDeleter<T>::GetInstance()->swap(m_memPool);
+            if (m_memPool.size() == 0)
+                return MemPtr();
+        }
 
         MemPtr elem = m_memPool.back();
+        m_shadowMemPool.push_back(elem);
         m_memPool.pop_back();
+
         return elem;
     }
 
 private:
     vector<MemPtr>  m_memPool;
+    vector<MemPtr>  m_shadowMemPool;
     std::mutex      m_poolMutex;
 
     static const int s_poolSize = 100;
