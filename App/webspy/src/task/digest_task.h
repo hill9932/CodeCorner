@@ -8,8 +8,6 @@
 /**
 * @Function: This task do nothing except decide when to stop
 **/
-class CWebVoyager;
-class CTaskManager;
 class CFirstTask : public CSerialTask
 {
 public:
@@ -20,9 +18,6 @@ public:
 private:
 
 private:
-    CWebVoyager*    m_voyager;
-    CTaskManager*   m_taskManager;
-
     vector<HTTPClientPtr>   m_finishedReqPool;
 };
 

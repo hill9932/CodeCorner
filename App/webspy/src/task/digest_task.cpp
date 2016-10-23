@@ -6,20 +6,19 @@
 
 CFirstTask::CFirstTask()
 {
-    m_voyager       = NULL;
-    m_taskManager   = NULL;
 }
 
 bool CFirstTask::init()
 {
-    m_voyager       = CWebVoyager::GetInstance();
-    m_taskManager   = CTaskManager::GetInstance();
     return true;
 }
 
 void* CFirstTask::operator()(void* _item)
 {
-    while (!m_taskManager->isStop())
+    CWebVoyager*  voyager       = CWebVoyager::GetInstance();
+    CTaskManager* taskManager   = CTaskManager::GetInstance();
+
+    while (!taskManager->isStop())
     {
         if (m_finishedReqPool.size())
         {
@@ -31,7 +30,7 @@ void* CFirstTask::operator()(void* _item)
         }
         else
         {
-            m_voyager->swap(m_finishedReqPool);
+            voyager->swap(m_finishedReqPool);
             if (m_finishedReqPool.size() == 0)
                 SleepMS(1);
         }
@@ -57,12 +56,34 @@ void CDigestTask::process(HTTPClient_t* _hc)
     ofs.close();
     */
 
+    vector<tstring> v;
     const std::regex pattern("<a href=\"((?![#|javascript]).*?)\""); // skip the <a href="#...." and <a href="javascript:
     const std::cregex_token_iterator end;
     for (std::cregex_token_iterator it(buf, buf + bufSize, pattern, 1); it != end; ++it)
     {
-        L4C_LOG_TRACE(it->str());
+        tstring& str = it->str();
+        if (str.size() < 5 ||
+            0 != stricmp(str.substr(0, 4).c_str(), "http"))
+        {
+            const char* scheme = evhttp_uri_get_scheme(_hc->uri);
+            const char* host = evhttp_uri_get_host(_hc->uri);
+            if (!scheme || !host)   continue;
+
+            tstring fullStr;
+            fullStr =  scheme;
+            fullStr += "://";
+            fullStr += host;
+            fullStr += str;
+            v.push_back(fullStr);
+        }
+        else
+            v.push_back(str);
+
+        L4C_LOG_TRACE(str);
     }
+    
+    CWebVoyager*  voyager = CWebVoyager::GetInstance();
+    voyager->addRecords(v);
 }
 
 void* CDigestTask::operator()(void* _item)

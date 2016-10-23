@@ -6,13 +6,13 @@
 int CDNSManager::s_pendingLookupCount = 0;
 
 #define DNS_RECORD_DB_NAME      "dns_records.db"
-#define DNS_RECORD_TABLE_NAME   "DNS_RECORDS"
+#define MAIN_RECORD_TABLE_NAME   "DNS_RECORDS"
 
 CDNSManager::CDNSManager()
 {
     m_evbase    = NULL;
     m_dnsbase   = NULL;
-    m_tableName = DNS_RECORD_TABLE_NAME;
+    m_tableName = MAIN_RECORD_TABLE_NAME;
     m_dbName    = DNS_RECORD_DB_NAME;
 }
 
@@ -46,7 +46,7 @@ bool CDNSManager::__init__()
 string  CDNSManager::__getTableCreateSql__()
 {
     return "CREATE TABLE "                                       \
-        DNS_RECORD_TABLE_NAME "("                                           \
+        MAIN_RECORD_TABLE_NAME "("                                           \
         DNS_RECORD_TABLE_COL_ID             " INTEGER PRIMARY KEY,"         \
         DNS_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE,"        \
         DNS_RECORD_TABLE_COL_CNAME          " TEXT,"                        \
@@ -177,11 +177,11 @@ bool CDNSManager::addRecords()
 {
     if (!m_newRecords.size())   return false;
 
-    CStdString sql = " INSERT INTO " DNS_RECORD_TABLE_NAME
+    CStdString sql = " INSERT INTO " MAIN_RECORD_TABLE_NAME
         " VALUES (NULL, ?, ?, ?, ?, ?, ?);";
 
-    int z = m_basicDB.compile(DNS_RECORD_TABLE_NAME, sql);
-    sqlite3_stmt* stmt = m_basicDB.getStatment(DNS_RECORD_TABLE_NAME);
+    int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql);
+    sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
     if (!stmt)   return false;
 
     m_basicDB.beginTransact();
@@ -214,7 +214,7 @@ bool CDNSManager::updateRecords()
 {
     if (!m_pendingRecords.size())   return false;
 
-    CStdString sql = " UPDATE " DNS_RECORD_TABLE_NAME " SET " \
+    CStdString sql = " UPDATE " MAIN_RECORD_TABLE_NAME " SET " \
         DNS_RECORD_TABLE_COL_NAME "=?, "          \
         DNS_RECORD_TABLE_COL_CNAME "=?, "         \
         DNS_RECORD_TABLE_COL_ADDRESS "=?, "       \
@@ -223,8 +223,8 @@ bool CDNSManager::updateRecords()
         DNS_RECORD_TABLE_COL_STATUS "=?"          \
         " WHERE ID = ?;";
 
-    int z = m_basicDB.compile(DNS_RECORD_TABLE_NAME, sql);
-    sqlite3_stmt* stmt = m_basicDB.getStatment(DNS_RECORD_TABLE_NAME);
+    int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql);
+    sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
     if (!stmt)   return false;
 
     m_basicDB.beginTransact();
@@ -267,7 +267,7 @@ void CDNSManager::threadFunc()
         if (m_pendingRecords.size() <= PROCESS_RECORDS_BATCH_COUNT / 2)
         {
             sql.Format("SELECT * FROM %s WHERE STATUS = %d ORDER BY " DNS_RECORD_TABLE_COL_CREATE_TIME " ASC LIMIT %d",
-                DNS_RECORD_TABLE_NAME, DNS_RECORD_t::UNCHECK, PROCESS_RECORDS_BATCH_COUNT);
+                MAIN_RECORD_TABLE_NAME, DNS_RECORD_t::UNCHECK, PROCESS_RECORDS_BATCH_COUNT);
             doSql(sql, GetDNSRecordCallback);
 
             //
@@ -275,7 +275,7 @@ void CDNSManager::threadFunc()
             //
             if (m_pendingRecords.size())
             {
-                sql.Format("UPDATE " DNS_RECORD_TABLE_NAME " SET " DNS_RECORD_TABLE_COL_STATUS " = %d WHERE ID IN %s",
+                sql.Format("UPDATE " MAIN_RECORD_TABLE_NAME " SET " DNS_RECORD_TABLE_COL_STATUS " = %d WHERE ID IN %s",
                     DNS_RECORD_t::PROCESSING, getPendingRecords().c_str());
                 doSql(sql, NULL);
             }

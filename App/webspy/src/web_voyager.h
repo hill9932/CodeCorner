@@ -22,11 +22,14 @@ public:
         _v.swap(m_finishedReqPool);
     }
 
+    bool addRecords(const vector<tstring>& _records);
+    bool updateRecords(const vector<const tchar*>& _records);
+
 private:
-    #define VOYAGER_RECORD_TABLE_COL_ID         "ID"
-    #define VOYAGER_RECORD_TABLE_COL_NAME       "NAME"
-    #define VOYAGER_RECORD_TABLE_COL_CREATE_TIME "CREATE_TIME"
-    #define VOYAGER_RECORD_TABLE_COL_STATUS     "STATUS"
+    #define MAIN_RECORD_TABLE_COL_ID         "ID"
+    #define MAIN_RECORD_TABLE_COL_CREATE_TIME "CREATE_TIME"
+    #define MAIN_RECORD_TABLE_COL_NAME       "NAME"
+    #define MAIN_RECORD_TABLE_COL_STATUS     "STATUS"
 
 
     /**
@@ -48,10 +51,7 @@ private:
     void spiderThreadFunc();
 
     static void HttpRequestCB(struct evhttp_request* _request,  void* _arg);
-    static int  ReadHeaderDoneCallback(struct evhttp_request* _request,      void* _context);
-    static void ReadChunkCallback(struct evhttp_request* _request,           void* _context);
-    static void RemoteRequestErrorCallback(enum evhttp_request_error _error, void* _context);
-    static void RemoteConnectionCloseCallback(struct evhttp_connection* _connection, void* _context);
+    static int  GetMainRecordCallback(void* _context, int _argc, char** _argv, char** _szColName);
 
 private:
     HTTPClientPtr createHttpRequset(

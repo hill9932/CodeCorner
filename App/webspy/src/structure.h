@@ -11,7 +11,8 @@ struct HTTPClient_t
     {
         #undef STATUS_TIMEOUT
 
-        STATUS_UNKNOWN     = 0,
+        STATUS_UNKNOWN     = -1,
+        STATUS_BORN        = 0,
         STATUS_INITIALIZED = 1,
         STATUS_DOWNLOADING = 2,
         STATUS_DOWNLOADED  = 3,

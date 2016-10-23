@@ -7,13 +7,13 @@
 
 
 #define VOYAGER_RECORD_DB_NAME          "voyager_records.db"
-#define VOYAGER_RECORD_TABLE_NAME       "VOYAGER_RECORDS"
+#define MAIN_RECORD_TABLE_NAME       "VOYAGER_RECORDS"
 
 
 CWebVoyager::CWebVoyager()
 {
     m_dbName    = VOYAGER_RECORD_DB_NAME;
-    m_tableName = VOYAGER_RECORD_TABLE_NAME;
+    m_tableName = MAIN_RECORD_TABLE_NAME;
 
     m_evbase    = NULL;
     m_dnsbase   = NULL;
@@ -75,52 +75,106 @@ bool CWebVoyager::__uninit__()
 string CWebVoyager::__getTableCreateSql__()
 {
     return "CREATE TABLE "                                       \
-        VOYAGER_RECORD_TABLE_NAME "("                                           \
-        VOYAGER_RECORD_TABLE_COL_ID             " INTEGER PRIMARY KEY,"         \
-        VOYAGER_RECORD_TABLE_COL_CREATE_TIME    " INT  NOT NULL,"               \
-        VOYAGER_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE,"        \
-        VOYAGER_RECORD_TABLE_COL_STATUS         " INT  NOT NULL);";
+        MAIN_RECORD_TABLE_NAME "("                                           \
+        MAIN_RECORD_TABLE_COL_ID             " INTEGER PRIMARY KEY,"         \
+        MAIN_RECORD_TABLE_COL_CREATE_TIME    " INT  NOT NULL,"               \
+        MAIN_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE,"        \
+        MAIN_RECORD_TABLE_COL_STATUS         " INT  NOT NULL);";
 }
 
-int CWebVoyager::ReadHeaderDoneCallback(struct evhttp_request* _request, void* _context)
+bool CWebVoyager::addRecords(const vector<tstring>& _records)
 {
-    fprintf(stderr, "< HTTP/1.1 %d %s\n", evhttp_request_get_response_code(_request), evhttp_request_get_response_code_line(_request));
-    struct evkeyvalq* headers = evhttp_request_get_input_headers(_request);
-    struct evkeyval* header = headers->tqh_first;
-    while (header) {
-        printf("%s: %s\n", header->key, header->value);
-        header = header->next.tqe_next;
-    }
-    return 0;
-}
+    if (_records.size() == 0)   return true;
 
-void CWebVoyager::ReadChunkCallback(struct evhttp_request* _request, void* _context)
-{
-    char buf[4096];
-    struct evbuffer* evbuf = evhttp_request_get_input_buffer(_request);
-    int n = 0;
-    while ((n = evbuffer_remove(evbuf, buf, 4096)) > 0)
+    tstring sql = " INSERT INTO " MAIN_RECORD_TABLE_NAME " VALUES (NULL, ?, ?, ?);";
+    int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql.c_str());
+    sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
+    if (!stmt)   return false;
+
+    time_t now = time(NULL);
+    m_basicDB.beginTransact();
+    for (int i = 0; i < _records.size(); ++i)
     {
-        fwrite(buf, n, 1, stdout);
+        z = sqlite3_reset(stmt);
+        if (z == 0 &&
+            0 == sqlite3_bind_int(stmt, 1,now) &&
+            0 == sqlite3_bind_text(stmt, 2, _records[i].c_str(), _records[i].size(), SQLITE_STATIC) &&
+            0 == sqlite3_bind_int (stmt, 3, HTTPClient_t::STATUS_BORN))
+        {
+            z = sqlite3_step(stmt);
+            if (SQLITE_DONE != z) // url existing
+            {
+                const char* msg = sqlite3_errmsg(m_basicDB);
+                L4C_LOG_ERROR(msg << ": " << _records[i]);
+                z = sqlite3_reset(stmt);
+            }
+        }
+        else
+        {
+            const char* msg = sqlite3_errmsg(m_basicDB);
+            L4C_LOG_ERROR(msg << ": " << _records[i]);
+        }
     }
+
+    z = m_basicDB.commit();
+    ON_ERROR_PRINT_MSG_AND_DO(z, != , 0, "Fail to commit db.", return false);
+
+    return true;
 }
 
-void CWebVoyager::RemoteRequestErrorCallback(enum evhttp_request_error _error, void* _context)
+bool CWebVoyager::updateRecords(const vector<const tchar*>& _records)
 {
-    event_base_loopexit(CWebVoyager::GetInstance()->m_evbase, NULL);
+    if (!_records.size())   return false;
+
+    tstring sql = " UPDATE " MAIN_RECORD_TABLE_NAME " SET " \
+        MAIN_RECORD_TABLE_COL_CREATE_TIME "=?, "   \
+        MAIN_RECORD_TABLE_COL_NAME "=?, "          \
+        MAIN_RECORD_TABLE_COL_STATUS "=?"          \
+        " WHERE ID = ?;";
+
+    int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql.c_str());
+    sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
+    if (!stmt)   return false;
+
+    m_basicDB.beginTransact();
+ /*   list<DNS_RECORD_t>::iterator it = m_pendingRecords.begin();
+    for (; it != m_pendingRecords.end(); ++it)
+    {
+        z = sqlite3_reset(stmt);
+        if (z == 0 &&
+            0 == sqlite3_bind_text(stmt, 1, it->name.c_str(), it->name.size(), SQLITE_STATIC) &&
+            0 == sqlite3_bind_text(stmt, 2, it->cname.c_str(), it->cname.size(), SQLITE_STATIC) &&
+            0 == sqlite3_bind_text(stmt, 3, it->address.c_str(), it->address.size(), SQLITE_STATIC) &&
+            0 == sqlite3_bind_int(stmt, 4, it->createTime) &&
+            0 == sqlite3_bind_int(stmt, 5, it->visitTime) &&
+            0 == sqlite3_bind_int(stmt, 6, it->status) &&
+            0 == sqlite3_bind_int(stmt, 7, it->id))
+        {
+            z = sqlite3_step(stmt);
+            if (SQLITE_OK != z && SQLITE_DONE != z)
+            {
+                const char* msg = sqlite3_errmsg(m_basicDB);
+                L4C_LOG_ERROR(msg);
+                break;
+            }
+        }
+    }*/
+    m_basicDB.commit();
+
+    return true;
 }
 
-void CWebVoyager::RemoteConnectionCloseCallback(struct evhttp_connection* _connection, void* _context)
+int CWebVoyager::GetMainRecordCallback(void* _context, int _argc, char** _argv, char** _szColName)
 {
-    event_base_loopexit(CWebVoyager::GetInstance()->m_evbase, NULL);
+    return 0;
 }
 
 HTTPClient_t::HTTPClient_t()
 {
-    uri = NULL;
-    conn = NULL;
+    uri     = NULL;
+    conn    = NULL;
     request = NULL;
-    status = STATUS_UNKNOWN;
+    status  = STATUS_UNKNOWN;
     type = IHttpRequest::Type::NONE;
 }
 
