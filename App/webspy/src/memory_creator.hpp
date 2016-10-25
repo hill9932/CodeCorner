@@ -31,7 +31,12 @@ public:
 
     void operator()(T* p)
     {
-        m_memPool.push_back(MemPtr(p, NoneDeleter<T>()));
+#if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
+        L4C_LOG_DEBUG("Deleter get " << p->debugId);
+#endif
+        p->reset();
+
+        m_memPool.push_back(MemPtr(p, *this));
     }
 
     void swap(vector<MemPtr>& _v)
@@ -39,8 +44,10 @@ public:
         _v.swap(m_memPool);
     }
 
+    int getRespCount() { return m_memPool.size(); }
+
 private:
-    vector<MemPtr>  m_memPool;
+    static vector<MemPtr>  m_memPool;
 };
 
 
@@ -54,7 +61,12 @@ public:
     {
         for (int i = 0; i < s_poolSize; ++i)
         {
-            MemPtr memPtr(new T, *CMemDeleter<T>::GetInstance());   // specify CMemDelete<T> to delete the memory
+            T* obj = new T;
+
+#if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
+            obj->setDebugId(i);
+#endif
+            MemPtr memPtr(obj, m_deletor);   // specify CMemDelete<T> to delete the memory
             m_memPool.push_back(memPtr);
         }
 
@@ -67,7 +79,9 @@ public:
 
         if (m_memPool.size() == 0)
         {
-            CMemDeleter<T>::GetInstance()->swap(m_memPool);
+            cleanup();
+
+            m_deletor.swap(m_memPool);
             if (m_memPool.size() == 0)
                 return MemPtr();
         }
@@ -75,14 +89,42 @@ public:
         MemPtr elem = m_memPool.back();
         m_shadowMemPool.push_back(elem);
         m_memPool.pop_back();
+        
+#if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
+        int n = m_deletor.getRespCount();
+        assert(n + m_shadowMemPool.size() + m_memPool.size() == s_poolSize);
+        L4C_LOG_DEBUG("Creator return " << elem->debugId);
+#endif
 
         return elem;
     }
 
+    void cleanup()
+    {
+        list<MemPtr>::const_iterator it = m_shadowMemPool.begin();
+        for (; it != m_shadowMemPool.end(); ++it)
+        {
+            if ((*it)->finished)
+            {
+                assert((*it).use_count() == 1);
+
+                it = m_shadowMemPool.erase(it);
+
+#if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
+                int n2 = m_deletor.getRespCount();
+                int m2 = m_shadowMemPool.size();
+                assert(n2 + m2 == s_poolSize);
+#endif
+            }
+        }
+    }
+
 private:
     vector<MemPtr>  m_memPool;
-    vector<MemPtr>  m_shadowMemPool;
+    list<MemPtr>    m_shadowMemPool;
     std::mutex      m_poolMutex;
+
+    CMemDeleter<T>  m_deletor;
 
     static const int s_poolSize = 100;
 };

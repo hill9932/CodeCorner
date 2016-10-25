@@ -1,7 +1,7 @@
 #ifndef __HL_HTTP_BASIC_INCLUDE_H__
 #define __HL_HTTP_BASIC_INCLUDE_H__
 
-#include "common.h"
+#include "log_.h"
 
 #include <string>
 #include <event2/event.h>  

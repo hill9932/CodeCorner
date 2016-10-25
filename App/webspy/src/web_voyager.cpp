@@ -6,14 +6,49 @@
 #include <event2/http_struct.h>
 
 
-#define VOYAGER_RECORD_DB_NAME          "voyager_records.db"
-#define MAIN_RECORD_TABLE_NAME       "VOYAGER_RECORDS"
+#define VOYAGER_RECORD_DB_NAME      "voyager_records.db"
+#define MAIN_RECORD_TABLE_NAME      "VOYAGER_RECORDS"
 
+#define MAIN_RECORD_TABLE_COL_CODE  "RESPONSE_CODE"
+
+HTTPClient_t::HTTPClient_t()
+{
+    uri = NULL;
+    conn = NULL;
+    request = NULL;
+
+    reset();
+}
+
+HTTPClient_t::~HTTPClient_t()
+{
+
+}
+
+void HTTPClient_t::reset()
+{
+ /*   if (uri)    evhttp_uri_free(uri);
+    if (conn)   evhttp_connection_free(conn);
+    if (respCode == HTTP_OK && request)
+    {
+        evhttp_request_free(request);
+    }
+   */ 
+    uri     = NULL;
+    conn    = NULL;
+    request = NULL;
+    status  = HTTPClient_t::STATUS_UNCHECK;
+    type    = IHttpRequest::Type::NONE;
+    respCode = 0;
+
+    undone();
+}
 
 CWebVoyager::CWebVoyager()
 {
-    m_dbName    = VOYAGER_RECORD_DB_NAME;
-    m_tableName = MAIN_RECORD_TABLE_NAME;
+    m_dbName        = VOYAGER_RECORD_DB_NAME;
+    m_tableName     = MAIN_RECORD_TABLE_NAME;
+    m_getRecordsCB  = GetMainRecordCallback;
 
     m_evbase    = NULL;
     m_dnsbase   = NULL;
@@ -48,9 +83,9 @@ bool CWebVoyager::__init__()
         return false;
     }
 
+    recover();
+
     CMemCreator<HTTPClient_t>::GetInstance()->init();
-    m_firstTask.init();
-    m_digestTask.init();
 
     return true;
 }
@@ -74,11 +109,13 @@ bool CWebVoyager::__uninit__()
 
 string CWebVoyager::__getTableCreateSql__()
 {
-    return "CREATE TABLE "                                       \
-        MAIN_RECORD_TABLE_NAME "("                                           \
-        MAIN_RECORD_TABLE_COL_ID             " INTEGER PRIMARY KEY,"         \
-        MAIN_RECORD_TABLE_COL_CREATE_TIME    " INT  NOT NULL,"               \
-        MAIN_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE,"        \
+    return "CREATE TABLE "                                                                  \
+        MAIN_RECORD_TABLE_NAME "("                                                          \
+        MAIN_RECORD_TABLE_COL_ID             " INTEGER PRIMARY KEY, "                       \
+        MAIN_RECORD_TABLE_COL_CREATE_TIME    " INT NOT NULL, "                              \
+        MAIN_RECORD_TABLE_COL_VISIT_TIME     " INT DEFAULT 0, "                             \
+        MAIN_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE, "                      \
+        MAIN_RECORD_TABLE_COL_CODE           " INT NOT NULL DEFAULT 0, "                    \
         MAIN_RECORD_TABLE_COL_STATUS         " INT  NOT NULL);";
 }
 
@@ -86,7 +123,10 @@ bool CWebVoyager::addRecords(const vector<tstring>& _records)
 {
     if (_records.size() == 0)   return true;
 
-    tstring sql = " INSERT INTO " MAIN_RECORD_TABLE_NAME " VALUES (NULL, ?, ?, ?);";
+    tstring sql = " INSERT INTO "   MAIN_RECORD_TABLE_NAME "(" \
+                                    MAIN_RECORD_TABLE_COL_CREATE_TIME ", " \
+                                    MAIN_RECORD_TABLE_COL_NAME ", " \
+                                    MAIN_RECORD_TABLE_COL_STATUS ") VALUES ( ?, ?, ?);";
     int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql.c_str());
     sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
     if (!stmt)   return false;
@@ -97,15 +137,23 @@ bool CWebVoyager::addRecords(const vector<tstring>& _records)
     {
         z = sqlite3_reset(stmt);
         if (z == 0 &&
-            0 == sqlite3_bind_int(stmt, 1,now) &&
+            0 == sqlite3_bind_int(stmt,  1, now) &&
             0 == sqlite3_bind_text(stmt, 2, _records[i].c_str(), _records[i].size(), SQLITE_STATIC) &&
-            0 == sqlite3_bind_int (stmt, 3, HTTPClient_t::STATUS_BORN))
+            0 == sqlite3_bind_int(stmt,  3, HTTPClient_t::STATUS_UNCHECK))
         {
             z = sqlite3_step(stmt);
             if (SQLITE_DONE != z) // url existing
             {
                 const char* msg = sqlite3_errmsg(m_basicDB);
-                L4C_LOG_ERROR(msg << ": " << _records[i]);
+                if (SQLITE_CONSTRAINT == z)
+                {
+                    L4C_LOG_TRACE(msg << ": " << _records[i]);
+                }
+                else
+                {
+                    L4C_LOG_ERROR(msg << ": " << _records[i]);
+                }
+
                 z = sqlite3_reset(stmt);
             }
         }
@@ -122,119 +170,116 @@ bool CWebVoyager::addRecords(const vector<tstring>& _records)
     return true;
 }
 
-bool CWebVoyager::updateRecords(const vector<const tchar*>& _records)
+bool CWebVoyager::updateRecords()
 {
-    if (!_records.size())   return false;
+    if (!m_HCRecords.size())   return false;
 
     tstring sql = " UPDATE " MAIN_RECORD_TABLE_NAME " SET " \
-        MAIN_RECORD_TABLE_COL_CREATE_TIME "=?, "   \
-        MAIN_RECORD_TABLE_COL_NAME "=?, "          \
-        MAIN_RECORD_TABLE_COL_STATUS "=?"          \
+        MAIN_RECORD_TABLE_COL_VISIT_TIME "=?, "             \
+        MAIN_RECORD_TABLE_COL_STATUS "=?, "                 \
+        MAIN_RECORD_TABLE_COL_CODE "=?"                     \
         " WHERE ID = ?;";
 
     int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql.c_str());
     sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
     if (!stmt)   return false;
 
+    time_t now = time(NULL);
     m_basicDB.beginTransact();
- /*   list<DNS_RECORD_t>::iterator it = m_pendingRecords.begin();
-    for (; it != m_pendingRecords.end(); ++it)
     {
-        z = sqlite3_reset(stmt);
-        if (z == 0 &&
-            0 == sqlite3_bind_text(stmt, 1, it->name.c_str(), it->name.size(), SQLITE_STATIC) &&
-            0 == sqlite3_bind_text(stmt, 2, it->cname.c_str(), it->cname.size(), SQLITE_STATIC) &&
-            0 == sqlite3_bind_text(stmt, 3, it->address.c_str(), it->address.size(), SQLITE_STATIC) &&
-            0 == sqlite3_bind_int(stmt, 4, it->createTime) &&
-            0 == sqlite3_bind_int(stmt, 5, it->visitTime) &&
-            0 == sqlite3_bind_int(stmt, 6, it->status) &&
-            0 == sqlite3_bind_int(stmt, 7, it->id))
+        SCOPED_GUARD(m_HCRecordsMutex);
+        vector<HTTPClientPtr>::iterator it = m_HCRecords.begin();
+        for (; it != m_HCRecords.end(); ++it)
         {
-            z = sqlite3_step(stmt);
-            if (SQLITE_OK != z && SQLITE_DONE != z)
+            z = sqlite3_reset(stmt);
+            if (z == 0 &&
+                0 == sqlite3_bind_int(stmt, 1, now) &&
+                0 == sqlite3_bind_int(stmt, 2, (*it)->status) &&
+                0 == sqlite3_bind_int(stmt, 3, (*it)->respCode) &&
+                0 == sqlite3_bind_int(stmt, 4, (*it)->id))
             {
-                const char* msg = sqlite3_errmsg(m_basicDB);
-                L4C_LOG_ERROR(msg);
-                break;
+                z = sqlite3_step(stmt);
+                if (SQLITE_OK != z && SQLITE_DONE != z)
+                {
+                    const char* msg = sqlite3_errmsg(m_basicDB);
+                    L4C_LOG_ERROR(msg);
+                    sqlite3_reset(stmt);
+                }
             }
         }
-    }*/
+    }
     m_basicDB.commit();
 
     return true;
 }
 
-int CWebVoyager::GetMainRecordCallback(void* _context, int _argc, char** _argv, char** _szColName)
+void CWebVoyager::freeHC(HTTPClient_t* _hc)
 {
-    return 0;
+    _hc->done();
 }
 
-HTTPClient_t::HTTPClient_t()
+void CWebVoyager::finishHttpRequest(HTTPClientPtr& _hc)
 {
-    uri     = NULL;
-    conn    = NULL;
-    request = NULL;
-    status  = STATUS_UNKNOWN;
-    type = IHttpRequest::Type::NONE;
-}
+    if (_hc->respCode == HTTP_OK)
+    {
+        CHttpUtils::ShowRequestInfo(_hc->request);
 
-HTTPClient_t::~HTTPClient_t()
-{
-    if (uri)    evhttp_uri_free(uri);
-    if (request)evhttp_request_free(request);
-    if (conn)   evhttp_connection_free(conn);
-}
-
-void CWebVoyager::finishRequest(HTTPClientPtr& _hc)
-{
-    CHttpUtils::ShowRequestInfo(_hc->request);
-
-    SCOPED_GUARD(m_poolMutex);
-    m_finishedReqPool.push_back(_hc);
+        SCOPED_GUARD(m_HCRecordsMutex);
+        m_HCRecords.push_back(_hc);
+    }
+    else
+    {
+        freeHC(_hc.get());
+    }
 }
 
 void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
 {
+    CWebVoyager* voyager = CWebVoyager::GetInstance();
     HTTPClient_t* hc = (HTTPClient_t*)_arg;
+
     if (!_arg)
     {
+        hc->status = HTTPClient_t::STATUS_UNKNOWN;
         L4C_LOG_ERROR("Invalid parameters.");
-        return;
     }
     else if (!_request)
     {
         hc->status = HTTPClient_t::STATUS_TIMEOUT;
         L4C_LOG_ERROR("Timeout.");
-        return;
     }
-    
-    L4C_LOG_INFO(hc->url << ": " << _request->response_code);
-
-    hc->status = HTTPClient_t::STATUS_EXCEPTION;
-    CWebVoyager* voyager = CWebVoyager::GetInstance();
-    switch (_request->response_code)
+    else
     {
-        case HTTP_OK:
+        L4C_LOG_INFO(hc->url << ": " << _request->response_code);
+
+        hc->status = HTTPClient_t::STATUS_EXCEPTION;
+        hc->respCode = _request->response_code;
+
+        switch (_request->response_code)
         {
-            hc->status = HTTPClient_t::STATUS_DOWNLOADED;
-            evhttp_request_own(hc->request);
-            voyager->finishRequest(HTTPClientPtr(hc, NoneDeleter<HTTPClient_t>()));
-            break;
-        }
+            case HTTP_OK:
+            {
+                hc->status = HTTPClient_t::STATUS_DOWNLOADED;
+                evhttp_request_own(hc->request);    // freed by CDigestTask
+                break;
+            }
 
-        case 0:
-            L4C_LOG_ERROR("Connection refused to " << hc->url);
-            break;
+            case 0:
+                L4C_LOG_ERROR("Connection refused to " << hc->url);
+                break;
 
-        case HTTP_MOVETEMP:
-        {
-            const char* newLocation = evhttp_find_header(_request->input_headers, Response::Header::Location::Value);
-            HTTPClientPtr newHC = voyager->createHttpRequset(newLocation, IHttpRequest::Type::GET, 0, NULL, NULL);
-            voyager->startRequest(newHC);
+            case HTTP_MOVETEMP:
+            {
+                const char* newLocation = evhttp_find_header(_request->input_headers, Response::Header::Location::Value);
+                HTTPClientPtr newHC = voyager->createHttpRequset(newLocation, IHttpRequest::Type::GET, 0, NULL, NULL);
+                voyager->startRequest(newHC);
 
-            break;
+                break;
+            }
         }
     }
+
+    voyager->finishHttpRequest(HTTPClientPtr(hc, NoneDeleter<HTTPClient_t>()));
 }
 
 bool CWebVoyager::startRequest(HTTPClientPtr& _hc)
@@ -279,14 +324,26 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
     if (!_url)  return NULL;
 
     HTTPClientPtr hc = CMemCreator<HTTPClient_t>::GetInstance()->create();
+    while (!hc && !isStop())
+    {
+        SleepMS(1);
+        hc = CMemCreator<HTTPClient_t>::GetInstance()->create();
+    }
+
     if (!hc)
     {
-        L4C_LOG_INFO("Out of memory: Fail to allocate memory for http client.");
+        //L4C_LOG_INFO("Out of memory: Fail to allocate memory for http client.");
         return hc;
     }
 
     hc->url  = _url;
     hc->uri  = evhttp_uri_parse(hc->url.c_str());
+    if (!hc->uri)
+    {
+        L4C_LOG_ERROR("Fail to parse uri from: " << _url);
+        freeHC(hc.get());
+        return HTTPClientPtr();
+    }
 
     const char* host = evhttp_uri_get_host(hc->uri);
     int port = evhttp_uri_get_port(hc->uri);
@@ -316,7 +373,7 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
     //
     evhttp_add_header(hc->request->output_headers, Request::Header::Host::Value, host);
     evhttp_add_header(hc->request->output_headers, Request::Header::UserAgent::Value, "HL WEBSPY");
-    evhttp_connection_set_timeout(hc->conn, 5);
+    evhttp_connection_set_timeout(hc->conn, 10);
 
     /*
     evhttp_connection_set_closecb(hc->conn, RemoteConnectionCloseCallback, hc);
@@ -329,23 +386,52 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
     return hc;
 }
 
-bool CWebVoyager::loadPage()
+bool CWebVoyager::loadPage(URL_RECORD_t* _urlRecord)
 {
-    const char* entrance = "http://blog.csdn.net/pcliuguangtao/article/details/9360331";
-    HTTPClientPtr hc = createHttpRequset(entrance, IHttpRequest::Type::GET, 0, NULL, NULL);
-    startRequest(hc);
+    if (!_urlRecord || _urlRecord->name.empty()) return false;
 
-    event_base_dispatch(m_evbase);
+    HTTPClientPtr hc = createHttpRequset(_urlRecord->name.c_str(), IHttpRequest::Type::GET, 0, NULL, NULL);
+    if (!hc)    return false;
+
+    hc->id = _urlRecord->id;
+    startRequest(hc);
+    
     return true;
 }
 
-#define PROCESS_RECORDS_BATCH_COUNT     20
+
+int CWebVoyager::GetMainRecordCallback(void* _context, int _argc, char** _argv, char** _szColName)
+{
+    CWebVoyager* pThis = (CWebVoyager*)_context;
+    URL_RECORD_t* record = pThis->m_getRecordsCBLocal;
+
+    return 0;
+}
+
+int CWebVoyager::getUrlRecords(vector<URL_RECORD_t*>& _v)
+{
+    if (m_pendingRecords.size() == 0)
+        getNextRecords(GetMainRecordCallback);
+
+    _v.swap(m_pendingRecords);
+    return _v.size();
+}
+
+int CWebVoyager::getHCRecords(vector<HTTPClientPtr>& _records)
+{
+    updateRecords();
+
+    SCOPED_GUARD(m_HCRecordsMutex);
+    _records.swap(m_HCRecords);
+    return _records.size();
+}
 
 void CWebVoyager::spiderThreadFunc()
 {
     while (!isStop())
     {
-        loadPage();
+        event_base_dispatch(m_evbase);
+        L4C_LOG_INFO("Exit event loop.");
     }
 }
 
@@ -354,15 +440,34 @@ bool CWebVoyager::start()
     if (!init())    return false;
     if (m_spiderThread.get_id() != std::thread::id())   return true;
 
-    CTaskManager::GetInstance()->addTask(m_firstTask);
-    CTaskManager::GetInstance()->addTask(m_digestTask);
-    CTaskManager::GetInstance()->start();
+    vector<string> v;
+    const char* entrance = "http://www.cplusplus.com/reference/string/string/substr/";
+    v.push_back(entrance);
+    addRecords(v);
+
+    CCollectPipeline::GetInstance()->addTask(m_collectUrlTask);
+    CCollectPipeline::GetInstance()->addTask(m_downloadTask);
+    CCollectPipeline::GetInstance()->start();
+
+    CProcessPipeline::GetInstance()->addTask(m_firstProcessTask);
+    CProcessPipeline::GetInstance()->addTask(m_digestTask);
+    CProcessPipeline::GetInstance()->start();
 
     m_spiderThread = std::thread(&CWebVoyager::spiderThreadFunc, this);
     return m_spiderThread.joinable();
 }
 
+void CWebVoyager::stop()
+{
+    CProcessPipeline::GetInstance()->stop();
+    CCollectPipeline::GetInstance()->stop();
+    CBasicManager::stop();
+    event_base_loopexit(m_evbase, NULL);
+}
+
 void CWebVoyager::join()
 {
+    CProcessPipeline::GetInstance()->join();
+    CCollectPipeline::GetInstance()->join();
     m_spiderThread.join();
 }

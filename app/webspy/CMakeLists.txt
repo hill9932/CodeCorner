@@ -1,15 +1,16 @@
 set(PROJECT_NAME	webspy)
 project(${PROJECT_NAME})
 
+add_definitions(-DENABLE_DEBUG_MEM_POOL_ASSERT)
+
 set(WEBSPY_SRC_FOLD ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(WEBSPY_SRC 			src/main.cpp
-						src/basic_manager.cpp
 						src/dns_manager.cpp
 						src/web_voyager.cpp
 						src/web_server.cpp)
 
-set(WEBSPY_HEADER		src/basic_manager.h
+set(WEBSPY_HEADER		
 						src/dns_manager.h
 						src/web_voyager.h
 						src/web_server.h)
@@ -18,7 +19,9 @@ set(WEBSPY_BASIC_SRC	src/config.h
 						src/global.h
 						src/global.cpp
 						src/structure.h
-						src/memory_creator.hpp)					
+						src/memory_creator.hpp
+						src/basic_manager.h
+						src/basic_manager.hpp)					
 
 file(GLOB_RECURSE WEBSPY_HTTP_SRC	"${WEBSPY_SRC_FOLD}/http/*.cpp"
 									"${WEBSPY_SRC_FOLD}/http/*.h")	
@@ -42,7 +45,7 @@ add_executable(${PROJECT_NAME} 	${WEBSPY_SRC}
 								${WEBSPY_HEADER} 
 								${WEBSPY_BASIC_SRC} 
 								${WEBSPY_HTTP_SRC} 
-								${WEBSPY_TASK_SRC})				# set the source files
+								${WEBSPY_TASK_SRC})			# set the source files
 add_dependencies(${PROJECT_NAME} common net)				# set the dependency libraries
 
 target_link_libraries(${PROJECT_NAME} 	libevent_core 

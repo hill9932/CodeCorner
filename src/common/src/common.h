@@ -4,6 +4,7 @@
 #include "def.h"
 #include "locker_.h"
 
+
 namespace LabSpace
 {
     namespace Common

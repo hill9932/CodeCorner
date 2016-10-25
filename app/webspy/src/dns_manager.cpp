@@ -5,8 +5,8 @@
 
 int CDNSManager::s_pendingLookupCount = 0;
 
-#define DNS_RECORD_DB_NAME      "dns_records.db"
-#define MAIN_RECORD_TABLE_NAME   "DNS_RECORDS"
+#define DNS_RECORD_DB_NAME          "dns_records.db"
+#define MAIN_RECORD_TABLE_NAME      "DNS_RECORDS"
 
 CDNSManager::CDNSManager()
 {
@@ -14,6 +14,7 @@ CDNSManager::CDNSManager()
     m_dnsbase   = NULL;
     m_tableName = MAIN_RECORD_TABLE_NAME;
     m_dbName    = DNS_RECORD_DB_NAME;
+    m_getRecordsCB = GetMainRecordCallback;
 }
 
 CDNSManager::~CDNSManager()
@@ -47,66 +48,31 @@ string  CDNSManager::__getTableCreateSql__()
 {
     return "CREATE TABLE "                                       \
         MAIN_RECORD_TABLE_NAME "("                                           \
-        DNS_RECORD_TABLE_COL_ID             " INTEGER PRIMARY KEY,"         \
-        DNS_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE,"        \
+        MAIN_RECORD_TABLE_COL_ID             " INTEGER PRIMARY KEY,"         \
+        MAIN_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE,"        \
         DNS_RECORD_TABLE_COL_CNAME          " TEXT,"                        \
         DNS_RECORD_TABLE_COL_ADDRESS        " TEXT NOT NULL,"               \
-        DNS_RECORD_TABLE_COL_CREATE_TIME    " INT  NOT NULL,"               \
-        DNS_RECORD_TABLE_COL_VISIT_TIME     " INT  NOT NULL,"               \
-        DNS_RECORD_TABLE_COL_STATUS         " INT  NOT NULL);";
+        MAIN_RECORD_TABLE_COL_CREATE_TIME    " INT  NOT NULL,"               \
+        MAIN_RECORD_TABLE_COL_VISIT_TIME     " INT  NOT NULL,"               \
+        MAIN_RECORD_TABLE_COL_STATUS         " INT  NOT NULL);";
 }
 
-int CDNSManager::GetDNSRecordCallback(void* _context, int _argc, char** _argv, char** _szColName)
+int CDNSManager::GetMainRecordCallback(void* _context, int _argc, char** _argv, char** _szColName)
 {
     CDNSManager* manager = (CDNSManager*)_context;
-    DNS_RECORD_t record;
+    DNS_RECORD_t* record = manager->m_getRecordsCBLocal;
 
     for (int i = 0; i < _argc; ++i)
     {
         if (!_argv[i]) continue;
 
-        if (0 == stricmp(_szColName[i], DNS_RECORD_TABLE_COL_NAME))
-            record.name     = _argv[i];
         else if (0 == stricmp(_szColName[i], DNS_RECORD_TABLE_COL_CNAME))
-            record.cname = _argv[i];
+            record->cname = _argv[i];
         else if (0 == stricmp(_szColName[i], DNS_RECORD_TABLE_COL_ADDRESS))
-            record.address  = _argv[i];
-        else if (0 == stricmp(_szColName[i], DNS_RECORD_TABLE_COL_VISIT_TIME))
-            record.visitTime = atoi64(_argv[i]);
-        else if (0 == stricmp(_szColName[i], DNS_RECORD_TABLE_COL_CREATE_TIME))
-            record.createTime = atoi64(_argv[i]);
-        else if (0 == stricmp(_szColName[i], DNS_RECORD_TABLE_COL_STATUS))
-            record.status = (DNS_RECORD_t::STATUS_e)atoi(_argv[i]);
-        else if (0 == stricmp(_szColName[i], DNS_RECORD_TABLE_COL_ID))
-            record.id = atoi64(_argv[i]);
+            record->address  = _argv[i];
     }
 
-    manager->m_pendingRecords.push_back(record);
     return 0;
-}
-
-string CDNSManager::getPendingRecords()
-{
-    string records;
-    if (m_pendingRecords.size())
-    {
-        records = "(";
-
-        list<DNS_RECORD_t>::const_iterator it = m_pendingRecords.begin();
-        int i = 0;
-        for (; it != m_pendingRecords.end(); ++it)
-        {
-            CStdString tmp;
-            tmp.Format("%d", it->id);
-            records += tmp;
-
-            if (++i != m_pendingRecords.size())
-                records += ",";
-        }
-        records += ")";
-    }
-
-    return records;
 }
 
 void CDNSManager::LookupDNSCallback(int _errcode, struct evutil_addrinfo *_addr, void* _context)
@@ -121,7 +87,7 @@ void CDNSManager::LookupDNSCallback(int _errcode, struct evutil_addrinfo *_addr,
     {
         record->address.clear();
         record->visitTime = time(NULL);
-        record->status = DNS_RECORD_t::READY;
+        record->status = MAIN_TABLE_RECORD_t::STATUS_e::STATUS_READY;
         if (_addr->ai_canonname)    record->cname = _addr->ai_canonname;
 
         //
@@ -215,12 +181,12 @@ bool CDNSManager::updateRecords()
     if (!m_pendingRecords.size())   return false;
 
     CStdString sql = " UPDATE " MAIN_RECORD_TABLE_NAME " SET " \
-        DNS_RECORD_TABLE_COL_NAME "=?, "          \
+        MAIN_RECORD_TABLE_COL_NAME "=?, "          \
         DNS_RECORD_TABLE_COL_CNAME "=?, "         \
         DNS_RECORD_TABLE_COL_ADDRESS "=?, "       \
-        DNS_RECORD_TABLE_COL_CREATE_TIME "=?, "   \
-        DNS_RECORD_TABLE_COL_VISIT_TIME "=?, "    \
-        DNS_RECORD_TABLE_COL_STATUS "=?"          \
+        MAIN_RECORD_TABLE_COL_CREATE_TIME "=?, "   \
+        MAIN_RECORD_TABLE_COL_VISIT_TIME "=?, "    \
+        MAIN_RECORD_TABLE_COL_STATUS "=?"          \
         " WHERE ID = ?;";
 
     int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql);
@@ -228,18 +194,18 @@ bool CDNSManager::updateRecords()
     if (!stmt)   return false;
 
     m_basicDB.beginTransact();
-    list<DNS_RECORD_t>::iterator it = m_pendingRecords.begin();
+    vector<DNS_RECORD_t*>::iterator it = m_pendingRecords.begin();
     for (; it != m_pendingRecords.end(); ++it)
     {
         z = sqlite3_reset(stmt);
         if (z == 0 &&
-            0 == sqlite3_bind_text(stmt, 1, it->name.c_str(), it->name.size(), SQLITE_STATIC) &&
-            0 == sqlite3_bind_text(stmt, 2, it->cname.c_str(), it->cname.size(), SQLITE_STATIC) &&
-            0 == sqlite3_bind_text(stmt, 3, it->address.c_str(), it->address.size(), SQLITE_STATIC) &&
-            0 == sqlite3_bind_int(stmt, 4, it->createTime) &&
-            0 == sqlite3_bind_int(stmt, 5, it->visitTime) &&
-            0 == sqlite3_bind_int(stmt, 6, it->status) &&
-            0 == sqlite3_bind_int(stmt, 7, it->id))
+            0 == sqlite3_bind_text(stmt, 1, (*it)->name.c_str(), (*it)->name.size(), SQLITE_STATIC) &&
+            0 == sqlite3_bind_text(stmt, 2, (*it)->cname.c_str(), (*it)->cname.size(), SQLITE_STATIC) &&
+            0 == sqlite3_bind_text(stmt, 3, (*it)->address.c_str(), (*it)->address.size(), SQLITE_STATIC) &&
+            0 == sqlite3_bind_int(stmt, 4, (*it)->createTime) &&
+            0 == sqlite3_bind_int(stmt, 5, (*it)->visitTime) &&
+            0 == sqlite3_bind_int(stmt, 6, (*it)->status) &&
+            0 == sqlite3_bind_int(stmt, 7, (*it)->id))
         {
             z = sqlite3_step(stmt);
             if (SQLITE_OK != z && SQLITE_DONE != z)
@@ -256,39 +222,24 @@ bool CDNSManager::updateRecords()
     return true;
 }
 
-#define PROCESS_RECORDS_BATCH_COUNT     20
 
 void CDNSManager::threadFunc()
 {
     while (!isStop())
     {
-        CStdString sql;
-
-        if (m_pendingRecords.size() <= PROCESS_RECORDS_BATCH_COUNT / 2)
+        if (m_pendingRecords.size() == 0)
         {
-            sql.Format("SELECT * FROM %s WHERE STATUS = %d ORDER BY " DNS_RECORD_TABLE_COL_CREATE_TIME " ASC LIMIT %d",
-                MAIN_RECORD_TABLE_NAME, DNS_RECORD_t::UNCHECK, PROCESS_RECORDS_BATCH_COUNT);
-            doSql(sql, GetDNSRecordCallback);
-
-            //
-            // update the build state to building
-            //
-            if (m_pendingRecords.size())
-            {
-                sql.Format("UPDATE " MAIN_RECORD_TABLE_NAME " SET " DNS_RECORD_TABLE_COL_STATUS " = %d WHERE ID IN %s",
-                    DNS_RECORD_t::PROCESSING, getPendingRecords().c_str());
-                doSql(sql, NULL);
-            }
+            getNextRecords(GetMainRecordCallback);
         }
 
         //
         // use libevent to do the dns lookup
         //
         s_pendingLookupCount = m_pendingRecords.size();
-        list<DNS_RECORD_t>::iterator it = m_pendingRecords.begin();
+        vector<DNS_RECORD_t*>::iterator it = m_pendingRecords.begin();
         for (; it != m_pendingRecords.end(); ++it)
         {
-            lookupDNS(*it);
+            lookupDNS(**it);
         }
 
         if (s_pendingLookupCount == 0)
@@ -325,7 +276,7 @@ bool CDNSManager::addWebName(const string& _name)
     DNS_RECORD_t record;
     record.createTime   = time(NULL);
     record.name         = _name;
-    record.status       = DNS_RECORD_t::UNCHECK;
+    record.status       = MAIN_TABLE_RECORD_t::STATUS_e::STATUS_UNCHECK;
     record.visitTime    = 0;
 
     m_newRecords.push_back(record);

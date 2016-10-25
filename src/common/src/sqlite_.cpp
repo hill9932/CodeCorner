@@ -44,13 +44,13 @@ namespace LabSpace
         {
             if (!_dbPath)  return -1;
 
-            LOG_TRACE_STREAM << "Open db: " << _dbPath;
+            L4C_LOG_TRACE("Open db: " << _dbPath);
 
             close();
             int rc = sqlite3_open(_dbPath, &m_db);
             if (rc)
             {
-                LOG_ERROR_STREAM << "Can't open database: " << sqlite3_errmsg(m_db);
+                L4C_LOG_ERROR("Can't open database: " << sqlite3_errmsg(m_db));
                 sqlite3_close(m_db);
                 m_db = NULL;
             }
@@ -65,7 +65,7 @@ namespace LabSpace
             int z = 0;
             if (m_db)
             {
-                LOG_TRACE_STREAM << "Close db: " << m_dbPath;
+                L4C_LOG_TRACE("Close db: " << m_dbPath);
 
                 map<string, sqlite3_stmt*>::iterator it = m_stmts.begin();
                 for (; it != m_stmts.end(); ++it)
@@ -103,13 +103,13 @@ namespace LabSpace
                 stmt = NULL;
             }
 
-            LOG_TRACE_STREAM << "Compile on " << m_dbPath << ": " << _sql;
+            L4C_LOG_TRACE("Compile on " << m_dbPath << ": " << _sql);
 
             int z = sqlite3_prepare_v2(m_db, _sql, -1, &stmt, NULL);
             if (0 != z)
             {
                 const char* msg = sqlite3_errmsg(m_db);
-                LOG_ERROR_STREAM << msg;
+                L4C_LOG_ERROR(msg);
             }
             else
             {
@@ -129,7 +129,7 @@ namespace LabSpace
             int z = 0;
             z = sqlite3_reset(stmt);
             if (0 != z)
-                LOG_ERROR_STREAM << sqlite3_errmsg(m_db);
+                L4C_LOG_ERROR(sqlite3_errmsg(m_db));
 
             va_list args;
             va_start(args, _fmt);
@@ -168,7 +168,7 @@ namespace LabSpace
 
             z = sqlite3_step(stmt);
             if (0 != z && SQLITE_DONE != z)
-                LOG_ERROR_STREAM << sqlite3_errmsg(m_db);
+                L4C_LOG_ERROR(sqlite3_errmsg(m_db));
 
             return z;
         }
@@ -177,7 +177,7 @@ namespace LabSpace
         {
             if (!m_db || !_sql)  return -1;
 
-            LOG_TRACE_STREAM << "Do sql on " << m_dbPath << ": " << _sql;
+            L4C_LOG_TRACE("Do sql on " << m_dbPath << ": " << _sql);
 
             char *errMsg = NULL;
             int z = sqlite3_exec(m_db, _sql, _callback, _context, &errMsg);
@@ -200,7 +200,7 @@ namespace LabSpace
         {
             if (!m_db)  return -1;
 
-            LOG_TRACE_STREAM << "Begin transaction: " << m_dbPath;
+            L4C_LOG_TRACE("Begin transaction: " << m_dbPath);
 
             char *errMsg = NULL;
             int z = sqlite3_exec(m_db, "begin;", 0, 0, &errMsg);
@@ -215,7 +215,7 @@ namespace LabSpace
             if (!m_db)  return -1;
             if (!m_hasTransaction)  return 0;
 
-            LOG_TRACE_STREAM << "Commit transaction: " << m_dbPath;
+            L4C_LOG_TRACE("Commit transaction: " << m_dbPath);
 
             char *errMsg = NULL;
             int z = sqlite3_exec(m_db, "commit;", NULL, NULL, &errMsg);

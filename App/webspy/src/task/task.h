@@ -40,10 +40,10 @@ public:
 /**
  * @Function: run the tbb pipeline
  */
-class CTaskManager : public ISingleton<CTaskManager>
+class CPipeline : public ISingleton<CPipeline>
 {
 public:
-    CTaskManager();
+    CPipeline();
 
     bool start();   // start the pipeline
     void stop()     { m_stop = true; }
@@ -61,4 +61,21 @@ private:
     bool            m_stop;
 };
 
+
+/**
+ * @Function: this pipeline is used to parsing the web pages
+ **/
+class CProcessPipeline : public CPipeline
+{
+
+};
+
+
+/**
+ * @Function: this pipeline is used to download web pages
+ **/
+class CCollectPipeline : public CPipeline
+{
+
+};
 #endif

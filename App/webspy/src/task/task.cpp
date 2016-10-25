@@ -1,31 +1,31 @@
 #include "task.h"
 
 
-CTaskManager::CTaskManager()
+CPipeline::CPipeline()
 {
     m_stop = false;
 }
 
-void CTaskManager::addTask(CTask& _task)
+void CPipeline::addTask(CTask& _task)
 {
     m_pipeline.add_filter(_task);
 }
 
 #define MAX_TOKEN_COUNT         64
-void CTaskManager::threadFunc()
+void CPipeline::threadFunc()
 {
     m_pipeline.run(MAX_TOKEN_COUNT);
 }
 
-bool CTaskManager::start()
+bool CPipeline::start()
 {
     if (m_thread.get_id() != std::thread::id())   return true;
 
-    m_thread = std::thread(&CTaskManager::threadFunc, this);
+    m_thread = std::thread(&CPipeline::threadFunc, this);
     return m_thread.joinable();
 }
 
-void CTaskManager::join()
+void CPipeline::join()
 {
     m_thread.join();
 }

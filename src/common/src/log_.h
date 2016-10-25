@@ -24,26 +24,32 @@ extern log4cplus::Logger* g_logger;
                                     << StrUtil::GetFileName(__FILE__).c_str() << ":" << __LINE__ << " - " \
                                     << msg << endl;
 
+//#define LOG_FILE_LINE_INFORMATION
 #ifdef LOG_FILE_LINE_INFORMATION
 
 #define L4C_LOG_TRACE(str)       {   \
-    if (g_logger) { LOG4CPLUS_TRACE(*g_logger, " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); }\
+    if (g_logger) { LOG4CPLUS_TRACE(*g_logger, " " << \
+                    StrUtil::GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); }\
 }
 
 #define L4C_LOG_DEBUG(str)       {   \
-    if (g_logger) { LOG4CPLUS_DEBUG(*g_logger, " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); }\
+    if (g_logger) { LOG4CPLUS_DEBUG(*g_logger, " " << \
+                    StrUtil::GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); }\
 }
 
 #define L4C_LOG_INFO(str)        {   \
-    if (g_logger) { LOG4CPLUS_INFO(*g_logger,  " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str);  }\
+    if (g_logger) { LOG4CPLUS_INFO(*g_logger,  " " << \
+                    StrUtil::GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str);  }\
 }
 
 #define L4C_LOG_WARNING(str)     {   \
-    if (g_logger) { LOG4CPLUS_WARN(*g_logger,  " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); } \
+    if (g_logger) { LOG4CPLUS_WARN(*g_logger,  " " << \
+                    StrUtil::GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); } \
 }
 
 #define L4C_LOG_ERROR(str)     {   \
-    if (g_logger) { LOG4CPLUS_ERROR(*g_logger,  " " << GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); } \
+    if (g_logger) { LOG4CPLUS_ERROR(*g_logger,  " " << \
+                    StrUtil::GetFileName(__FILE__) << ":" << __FUNCTION__ << "():" << __LINE__ << " " << str); } \
 }
 
 #else

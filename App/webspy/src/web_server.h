@@ -6,7 +6,7 @@
 /**
  * @Function: This class start a simple http server
  **/
-class CWebServer : public CBasicManager, public ISingleton<CWebServer>
+class CWebServer : public ISingleton<CWebServer>
 {
 public:
     CWebServer();

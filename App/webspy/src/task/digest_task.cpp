@@ -4,34 +4,29 @@
 #include <fstream>
 
 
-CFirstTask::CFirstTask()
+CFirstProcessTask::CFirstProcessTask()
 {
 }
 
-bool CFirstTask::init()
+void* CFirstProcessTask::operator()(void* _item)
 {
-    return true;
-}
+    CWebVoyager* voyager    = CWebVoyager::GetInstance();
+    CPipeline* pipeline     = CProcessPipeline::GetInstance();
 
-void* CFirstTask::operator()(void* _item)
-{
-    CWebVoyager*  voyager       = CWebVoyager::GetInstance();
-    CTaskManager* taskManager   = CTaskManager::GetInstance();
-
-    while (!taskManager->isStop())
+    while (!pipeline->isStop())
     {
-        if (m_finishedReqPool.size())
+        if (m_pendingRecords.size())
         {
-            HTTPClient_t* hc = m_finishedReqPool.back().get();
-            m_finishedReqPool.pop_back();
+            HTTPClient_t* hc = m_pendingRecords.back().get();
+            m_pendingRecords.pop_back();
 
             hc->status = HTTPClient_t::STATUS_PROCESSING;
             return hc;
         }
         else
         {
-            voyager->swap(m_finishedReqPool);
-            if (m_finishedReqPool.size() == 0)
+            voyager->getHCRecords(m_pendingRecords);
+            if (m_pendingRecords.size() == 0)
                 SleepMS(1);
         }
     }
@@ -88,6 +83,9 @@ void CDigestTask::process(HTTPClient_t* _hc)
 
 void* CDigestTask::operator()(void* _item)
 {
-    process((HTTPClient_t*)_item);
+    HTTPClient_t* hc = (HTTPClient_t*)_item;
+    process(hc);    
+
+    CWebVoyager::GetInstance()->freeHC(hc);
     return _item;
 }

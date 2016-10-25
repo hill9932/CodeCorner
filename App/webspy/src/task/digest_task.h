@@ -8,17 +8,14 @@
 /**
 * @Function: This task do nothing except decide when to stop
 **/
-class CFirstTask : public CSerialTask
+class CFirstProcessTask : public CSerialTask
 {
 public:
-    CFirstTask();
+    CFirstProcessTask();
     void* operator()(void* _item);
-    virtual bool init();
 
 private:
-
-private:
-    vector<HTTPClientPtr>   m_finishedReqPool;
+    vector<HTTPClientPtr>   m_pendingRecords;
 };
 
 

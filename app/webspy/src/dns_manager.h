@@ -2,12 +2,12 @@
 #define __HL_DNS_MANAGER_INCLUDE_H__
 
 #include "basic_manager.h"
-
+#include "structure.h"
 
 /**
  * @Function: Keep the dns information which includes name, ip addresses, last visited time, status
  **/
-class CDNSManager : public CBasicManager, public ISingleton<CDNSManager>
+class CDNSManager : public CBasicManager<DNS_RECORD_t>, public ISingleton<CDNSManager>
 {
 public:
     CDNSManager();
@@ -19,13 +19,8 @@ public:
     bool addWebName(const string& _name);
 
 private:
-    #define DNS_RECORD_TABLE_COL_ID         "ID"
-    #define DNS_RECORD_TABLE_COL_NAME       "NAME"
     #define DNS_RECORD_TABLE_COL_CNAME      "CNAME"
     #define DNS_RECORD_TABLE_COL_ADDRESS    "ADDRESS"
-    #define DNS_RECORD_TABLE_COL_CREATE_TIME "CREATE_TIME"
-    #define DNS_RECORD_TABLE_COL_VISIT_TIME "LAST_VISIT_TIME"
-    #define DNS_RECORD_TABLE_COL_STATUS     "STATUS"
 
 
     /**
@@ -39,8 +34,6 @@ private:
      **/
     bool addRecords();
 
-    string getPendingRecords();
-
     /**
      * @Function: the thread function of lookup
      *  1. get the web names from database
@@ -50,29 +43,10 @@ private:
      */
     void threadFunc();
 
-    static int  GetDNSRecordCallback(void* _context, int _argc, char** _argv, char** _szColName);
+    static int  GetMainRecordCallback(void* _context, int _argc, char** _argv, char** _szColName);
     static void LookupDNSCallback(int _errcode, struct evutil_addrinfo *_addr, void* _context);
 
 private:
-    struct DNS_RECORD_t
-    {
-        enum STATUS_e
-        {
-            UNCHECK     = 0,
-            PROCESSING,         // doing dns lookup
-            READY,              // dns lookup finished and has valid ips if possible
-            RESOLVED            // web page grabbed
-        };
-
-        u_int32     id;
-        u_int32     createTime;
-        u_int32     visitTime;
-        STATUS_e    status;
-        string      name;
-        string      cname;
-        string      address;
-    };
-
     void lookupDNS(const DNS_RECORD_t& _record);
     bool updateRecords();
 
@@ -84,7 +58,6 @@ private:
     struct evdns_base*  m_dnsbase;
     struct event_base*  m_evbase;
 
-    list<DNS_RECORD_t>  m_pendingRecords;   // get from database
     vector<DNS_RECORD_t>m_newRecords;       // need to add to database
 };
 
