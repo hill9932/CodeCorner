@@ -1,7 +1,7 @@
 set(PROJECT_NAME	webspy)
 project(${PROJECT_NAME})
 
-add_definitions(-DENABLE_DEBUG_MEM_POOL_ASSERT)
+#add_definitions(-DENABLE_DEBUG_MEM_POOL_ASSERT)
 
 set(WEBSPY_SRC_FOLD ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -19,6 +19,7 @@ set(WEBSPY_BASIC_SRC	src/config.h
 						src/global.h
 						src/global.cpp
 						src/structure.h
+						src/structure.cpp
 						src/memory_creator.hpp
 						src/basic_manager.h
 						src/basic_manager.hpp)					

@@ -77,8 +77,12 @@ void CDigestTask::process(HTTPClient_t* _hc)
         L4C_LOG_TRACE(str);
     }
     
-    CWebVoyager*  voyager = CWebVoyager::GetInstance();
-    voyager->addRecords(v);
+    if (v.size())
+    {
+        L4C_LOG_TRACE("Get new urls from " << _hc->url);
+        CWebVoyager*  voyager = CWebVoyager::GetInstance();
+        voyager->addRecords(v);
+    }
 }
 
 void* CDigestTask::operator()(void* _item)

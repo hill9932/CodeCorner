@@ -1,6 +1,7 @@
 #ifndef __HL_MEMORY_CREATOR_INCLUDE_H__
 #define __HL_MEMORY_CREATOR_INCLUDE_H__
 
+#include "singleton.h"
 #include <memory>
 
 class NonAllocable

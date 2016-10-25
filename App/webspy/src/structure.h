@@ -37,26 +37,13 @@ struct DNS_RECORD_t : public MAIN_TABLE_RECORD_t
 
 struct MemoryHint
 {
-    MemoryHint()       
-    { 
-        undone();
-    }
+    MemoryHint();
 
-    void done()         
-    { 
-#if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
-        L4C_LOG_DEBUG("I'm done at: " << debugId);
-#endif
-        finished = true; 
-    }
-
-    void undone()           
-    { 
-#if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
-        L4C_LOG_DEBUG("I'm undone at: " << debugId);
-#endif
-        finished = false; 
-    }
+    /**
+     * @Function: notify CMemCreator that it can be reused
+     **/
+    void done();
+    void undone();
 
 #if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
     void setDebugId(int _i)  { debugId = _i; }
@@ -105,7 +92,6 @@ private:
 };
 typedef shared_ptr<HTTPClient_t>    HTTPClientPtr;
 
-vector<HTTPClientPtr> CMemDeleter<HTTPClient_t>::m_memPool;
 
 
 #endif

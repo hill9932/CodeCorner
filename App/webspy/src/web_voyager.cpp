@@ -6,43 +6,11 @@
 #include <event2/http_struct.h>
 
 
-#define VOYAGER_RECORD_DB_NAME      "voyager_records.db"
-#define MAIN_RECORD_TABLE_NAME      "VOYAGER_RECORDS"
+#define VOYAGER_RECORD_DB_NAME          "voyager_records.db"
+#define MAIN_RECORD_TABLE_NAME          "VOYAGER_RECORDS"
 
-#define MAIN_RECORD_TABLE_COL_CODE  "RESPONSE_CODE"
-
-HTTPClient_t::HTTPClient_t()
-{
-    uri = NULL;
-    conn = NULL;
-    request = NULL;
-
-    reset();
-}
-
-HTTPClient_t::~HTTPClient_t()
-{
-
-}
-
-void HTTPClient_t::reset()
-{
- /*   if (uri)    evhttp_uri_free(uri);
-    if (conn)   evhttp_connection_free(conn);
-    if (respCode == HTTP_OK && request)
-    {
-        evhttp_request_free(request);
-    }
-   */ 
-    uri     = NULL;
-    conn    = NULL;
-    request = NULL;
-    status  = HTTPClient_t::STATUS_UNCHECK;
-    type    = IHttpRequest::Type::NONE;
-    respCode = 0;
-
-    undone();
-}
+#define MAIN_RECORD_TABLE_COL_CODE      "RESPONSE_CODE"
+#define MAIN_RECORD_TABLE_COL_HIT_COUNT "HIT_COUNT"
 
 CWebVoyager::CWebVoyager()
 {
@@ -116,6 +84,7 @@ string CWebVoyager::__getTableCreateSql__()
         MAIN_RECORD_TABLE_COL_VISIT_TIME     " INT DEFAULT 0, "                             \
         MAIN_RECORD_TABLE_COL_NAME           " TEXT NOT NULL UNIQUE, "                      \
         MAIN_RECORD_TABLE_COL_CODE           " INT NOT NULL DEFAULT 0, "                    \
+        MAIN_RECORD_TABLE_COL_HIT_COUNT      " INT NOT NULL DEFAULT 1, "                    \
         MAIN_RECORD_TABLE_COL_STATUS         " INT  NOT NULL);";
 }
 
@@ -246,7 +215,7 @@ void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
     else if (!_request)
     {
         hc->status = HTTPClient_t::STATUS_TIMEOUT;
-        L4C_LOG_ERROR("Timeout.");
+        L4C_LOG_INFO("Timeout to " << hc->url);
     }
     else
     {
@@ -326,13 +295,14 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
     HTTPClientPtr hc = CMemCreator<HTTPClient_t>::GetInstance()->create();
     while (!hc && !isStop())
     {
+        L4C_LOG_TRACE("Out of memory: Fail to allocate memory for http client.");
+
         SleepMS(1);
         hc = CMemCreator<HTTPClient_t>::GetInstance()->create();
     }
 
     if (!hc)
     {
-        //L4C_LOG_INFO("Out of memory: Fail to allocate memory for http client.");
         return hc;
     }
 
@@ -373,7 +343,7 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
     //
     evhttp_add_header(hc->request->output_headers, Request::Header::Host::Value, host);
     evhttp_add_header(hc->request->output_headers, Request::Header::UserAgent::Value, "HL WEBSPY");
-    evhttp_connection_set_timeout(hc->conn, 10);
+    evhttp_connection_set_timeout(hc->conn, 30);
 
     /*
     evhttp_connection_set_closecb(hc->conn, RemoteConnectionCloseCallback, hc);
