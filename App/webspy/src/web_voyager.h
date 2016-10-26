@@ -40,7 +40,7 @@ public:
      * @Function: update the url records info after http request finished
      **/
     bool updateRecords();
-    bool updateRecorde(HTTPClientPtr& _hc);
+    bool updateRecord(HTTPClient_t* _hc);
 
 private:
     /**
@@ -70,18 +70,26 @@ private:
     void finishHttpRequest(HTTPClientPtr& _hc);
 
 private:
-    std::thread         m_spiderThread;
-    struct evdns_base*  m_dnsbase;
-    struct event_base*  m_evbase;
+    std::thread             m_spiderThread;
+    struct evdns_base*      m_dnsbase;
+    struct event_base*      m_evbase;
 
+    u_int64                 m_issueCount;
+    u_int64                 m_finishedCount;
+
+    CMemCreator<HTTPClient_t>*  m_memAllocator;
     vector<HTTPClientPtr>   m_HCRecords;
     std::mutex              m_HCRecordsMutex;
 
-    CFirstProcessTask       m_firstProcessTask;
+    CGetFinishedRequestTask m_getFinishedRequestTask;
     CDigestTask             m_digestTask;
 
     CCollectURLTask         m_collectUrlTask;
     CDownloadTask           m_downloadTask;
+
+    std::mutex              m_dbMutex;      // for performance sick, remove it in the future.
+    sqlite3_stmt*           m_addRecordsStmt;
+    sqlite3_stmt*           m_updateRecordsStmt;
 };
 
 #endif

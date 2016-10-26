@@ -67,16 +67,7 @@ namespace LabSpace
             {
                 L4C_LOG_TRACE("Close db: " << m_dbPath);
 
-                map<string, sqlite3_stmt*>::iterator it = m_stmts.begin();
-                for (; it != m_stmts.end(); ++it)
-                {
-                    sqlite3_stmt* stmt = it->second;
-                    if (!stmt)  continue;
-
-                    sqlite3_finalize(stmt);
-                }
                 commit();
-                m_stmts.clear();
 
                 z = sqlite3_close(m_db);
                 m_db = NULL;
@@ -85,23 +76,10 @@ namespace LabSpace
             return z;
         }
 
-        sqlite3_stmt* CSqlLiteDB::getStatment(const tchar* _tableName)
+        sqlite3_stmt* CSqlLiteDB::compile(const tchar* _tableName, const tchar* _sql)
         {
-            if (!_tableName)    return NULL;
-            if (!m_stmts.count(_tableName)) return NULL;
-            return m_stmts[_tableName];
-        }
-
-
-        int CSqlLiteDB::compile(const tchar* _tableName, const tchar* _sql)
-        {
-            if (!m_db || !_sql)  return -1;
-            sqlite3_stmt* stmt = getStatment(_tableName);
-            if (stmt)
-            {
-                sqlite3_finalize(stmt);
-                stmt = NULL;
-            }
+            if (!m_db || !_sql)  return NULL;
+            sqlite3_stmt* stmt = NULL;
 
             L4C_LOG_TRACE("Compile on " << m_dbPath << ": " << _sql);
 
@@ -111,23 +89,18 @@ namespace LabSpace
                 const char* msg = sqlite3_errmsg(m_db);
                 L4C_LOG_ERROR(msg);
             }
-            else
-            {
-                m_stmts[_tableName] = stmt;
-            }
 
-            return z;
+            return stmt;
         }
 
-        int CSqlLiteDB::doStmt(const tchar* _tableName, const tchar* _fmt, ...)
+        int CSqlLiteDB::doStmt(sqlite3_stmt* _stmt, const tchar* _fmt, ...)
         {
             if (!m_db || !_fmt)  return -1;
 
-            sqlite3_stmt* stmt = getStatment(_tableName);
-            if (!stmt)  return -1;
+            if (!_stmt)  return -1;
 
             int z = 0;
-            z = sqlite3_reset(stmt);
+            z = sqlite3_reset(_stmt);
             if (0 != z)
                 L4C_LOG_ERROR(sqlite3_errmsg(m_db));
 
@@ -141,34 +114,43 @@ namespace LabSpace
             for (unsigned int i = 0; i < vec.size(); ++i)
             {
                 ++n;
-                if (vec[i] == "%d")
+                CStdString key = vec[i];
+                key.Trim();
+
+                if (key == "%d")
                 {
                     double v = va_arg(args, double);
-                    z = sqlite3_bind_double(stmt, n, v);
+                    z = sqlite3_bind_double(_stmt, n, v);
                     ON_ERROR_PRINT_MSG_AND_DO(z, != , 0, sqlite3_errmsg(m_db), return -2);
                 }
-                else if (vec[i] == "%u")
+                else if (key == "%u")
                 {
                     int v = va_arg(args, int);
-                    z = sqlite3_bind_int(stmt, n, v);
+                    z = sqlite3_bind_int(_stmt, n, v);
                     ON_ERROR_PRINT_MSG_AND_DO(z, != , 0, sqlite3_errmsg(m_db), return -2);
 
                 }
-                else if (vec[i] == "%s")
+                else if (key == "%s")
                 {
                     char* v = va_arg(args, char*);
-                    z = sqlite3_bind_text(stmt, n, v, strlen(v), NULL);
+                    z = sqlite3_bind_text(_stmt, n, v, strlen(v), SQLITE_STATIC);
                     ON_ERROR_PRINT_MSG_AND_DO(z, != , 0, sqlite3_errmsg(m_db), return -2);
                 }
                 else
                 {
+                    L4C_LOG_ERROR("Invalid type: " << key);
                     return -2;
                 }
             }
 
-            z = sqlite3_step(stmt);
-            if (0 != z && SQLITE_DONE != z)
-                L4C_LOG_ERROR(sqlite3_errmsg(m_db));
+            z = sqlite3_step(_stmt);
+            if (SQLITE_OK != z && SQLITE_DONE != z)
+            {
+                sqlite3_reset(_stmt);
+
+                if (SQLITE_CONSTRAINT != z)
+                    L4C_LOG_ERROR(sqlite3_errmsg(m_db));
+            }
 
             return z;
         }
@@ -204,9 +186,14 @@ namespace LabSpace
 
             char *errMsg = NULL;
             int z = sqlite3_exec(m_db, "begin;", 0, 0, &errMsg);
-            ON_ERROR_PRINT_MSG_AND_DO(z, != , SQLITE_OK, m_dbPath << ": " << errMsg, { if (errMsg) sqlite3_free(errMsg); });
+            if (z != SQLITE_OK)
+            {
+                L4C_LOG_ERROR(m_dbPath << ": " << errMsg ? errMsg : "");
+                if (errMsg) sqlite3_free(errMsg); 
+            }
+            else
+                m_hasTransaction = true;
 
-            m_hasTransaction = true;
             return z;
         }
 
@@ -219,7 +206,11 @@ namespace LabSpace
 
             char *errMsg = NULL;
             int z = sqlite3_exec(m_db, "commit;", NULL, NULL, &errMsg);
-            ON_ERROR_PRINT_MSG_AND_DO(z, != , SQLITE_OK, m_dbPath << ": " << errMsg, { if (errMsg) sqlite3_free(errMsg); });
+            if (z != SQLITE_OK)
+            {
+                L4C_LOG_ERROR(m_dbPath << ": " << errMsg ? errMsg : "");
+                if (errMsg) sqlite3_free(errMsg);
+            }
 
             m_hasTransaction = false;
             return z;

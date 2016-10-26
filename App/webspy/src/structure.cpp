@@ -1,7 +1,18 @@
 #include "structure.h"
 
 vector<HTTPClientPtr> CMemDeleter<HTTPClient_t>::m_memPool;
-
+const char * HTTPClient_t::RequestStatusDesc[] = 
+{
+    "STATUS_UNCHECK",
+    "STATUS_INITIALIZED",
+    "STATUS_DOWNLOADING",
+    "STATUS_DOWNLOADED",
+    "STATUS_PROCESSING",
+    "STATUS_FAILED",
+    "STATUS_TIMEOUT",
+    "STATUS_UNKNOWN",
+    "STATUS_FINISHED",
+};
 
 MemoryHint::MemoryHint()
 {
@@ -47,8 +58,8 @@ void HTTPClient_t::reset()
     }
     else
     {
-        if (conn)   evhttp_connection_free(conn);
-        if (uri)    evhttp_uri_free(uri);
+  //      if (conn)   evhttp_connection_free(conn);
+ //       if (uri)    evhttp_uri_free(uri);
     }
 
 

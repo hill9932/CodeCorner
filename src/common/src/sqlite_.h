@@ -32,7 +32,7 @@ namespace LabSpace
 
             int  open(const tchar* _db_path);
             int  close();
-            int  compile(const tchar* _tableName, const tchar* _sql);
+            sqlite3_stmt* compile(const tchar* _tableName, const tchar* _sql);
 
             /**
              * @Function: execute the sql statement.
@@ -42,7 +42,7 @@ namespace LabSpace
              *  -1  failed
              *  -2  invalid format
              **/
-            int  doStmt(const tchar* _tableName, const tchar* _fmt, ...);
+            int  doStmt(sqlite3_stmt* _stmt, const tchar* _fmt, ...);
             int  exec(const tchar* _sql, void* _context, DB_CALLBACK _callback = NULL);
             int  beginTransact();
             int  commit();
@@ -56,7 +56,6 @@ namespace LabSpace
             int  isTableExist(const tchar* _tableName);
             int  isTableFieldExist(const tchar* _tableName, const tchar* _fieldName);
 
-            sqlite3_stmt* getStatment(const tchar* _tableName);
             operator sqlite3* ()    { return m_db; }
             string getDbPath()      { return m_dbPath; }
             bool isValid()          { return m_db != NULL; }
@@ -64,7 +63,6 @@ namespace LabSpace
         private:
             string          m_dbPath;
             sqlite3*        m_db;
-            map<string, sqlite3_stmt*>   m_stmts;   // every table has a statement
             bool            m_hasTransaction;
         };
     }

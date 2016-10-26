@@ -146,8 +146,8 @@ bool CDNSManager::addRecords()
     CStdString sql = " INSERT INTO " MAIN_RECORD_TABLE_NAME
         " VALUES (NULL, ?, ?, ?, ?, ?, ?);";
 
-    int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql);
-    sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
+    int z = 0;
+    sqlite3_stmt* stmt = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql);
     if (!stmt)   return false;
 
     m_basicDB.beginTransact();
@@ -189,8 +189,8 @@ bool CDNSManager::updateRecords()
         MAIN_RECORD_TABLE_COL_STATUS "=?"          \
         " WHERE ID = ?;";
 
-    int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql);
-    sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
+    int z = 0;
+    sqlite3_stmt* stmt = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql);
     if (!stmt)   return false;
 
     m_basicDB.beginTransact();

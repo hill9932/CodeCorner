@@ -68,11 +68,14 @@ struct HTTPClient_t : public MemoryHint
         STATUS_DOWNLOADING  = 2,
         STATUS_DOWNLOADED   = 3,
         STATUS_PROCESSING   = 4,
-        STATUS_EXCEPTION    = 5,
+        STATUS_FAILED       = 5,
         STATUS_TIMEOUT      = 6,
         STATUS_UNKNOWN      = 7,
-        STATUS_FINISHED     = 10
+        STATUS_FINISHED     = 10,
+        STATUS_ALL
     };
+
+    static const char * RequestStatusDesc[];
 
     u_int64                     id;
     tstring                     url;

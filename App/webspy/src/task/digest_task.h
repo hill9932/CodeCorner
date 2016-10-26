@@ -8,10 +8,10 @@
 /**
 * @Function: This task do nothing except decide when to stop
 **/
-class CFirstProcessTask : public CSerialTask
+class CGetFinishedRequestTask : public CSerialTask
 {
 public:
-    CFirstProcessTask();
+    CGetFinishedRequestTask();
     void* operator()(void* _item);
 
 private:
@@ -19,7 +19,7 @@ private:
 };
 
 
-class CDigestTask : public CSerialTask// CParallelTask
+class CDigestTask : public CParallelTask
 {
 public:
     void* operator()(void* _item);

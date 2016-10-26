@@ -20,6 +20,8 @@ CWebVoyager::CWebVoyager()
 
     m_evbase    = NULL;
     m_dnsbase   = NULL;
+    m_issueCount     = 0;
+    m_finishedCount  = 0;
 }
 
 CWebVoyager::~CWebVoyager()
@@ -53,7 +55,29 @@ bool CWebVoyager::__init__()
 
     recover();
 
-    CMemCreator<HTTPClient_t>::GetInstance()->init();
+
+    tstring sql = " INSERT INTO "   MAIN_RECORD_TABLE_NAME "(" \
+        MAIN_RECORD_TABLE_COL_CREATE_TIME ", " \
+        MAIN_RECORD_TABLE_COL_NAME ", " \
+        MAIN_RECORD_TABLE_COL_STATUS ") VALUES ( ?, ?, ?);";
+
+    m_addRecordsStmt = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql.c_str());
+    ON_ERROR_PRINT_MSG_AND_DO(m_addRecordsStmt, == , NULL, "Fail to compile " << sql, return false);
+
+    //
+    // prepare update records statement
+    //
+    sql = " UPDATE " MAIN_RECORD_TABLE_NAME " SET " \
+        MAIN_RECORD_TABLE_COL_VISIT_TIME "=?, "             \
+        MAIN_RECORD_TABLE_COL_STATUS "=?, "                 \
+        MAIN_RECORD_TABLE_COL_CODE "=?"                     \
+        " WHERE ID = ?;";
+
+    m_updateRecordsStmt = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql.c_str());
+    ON_ERROR_PRINT_MSG_AND_DO(m_updateRecordsStmt, == , NULL, "Fail to compile " << sql, return false);
+
+    m_memAllocator = CMemCreator<HTTPClient_t>::GetInstance();
+    m_memAllocator->init();
 
     return true;
 }
@@ -70,6 +94,18 @@ bool CWebVoyager::__uninit__()
     {
         evdns_base_free(m_dnsbase, 0);
         m_dnsbase = NULL;
+    }
+
+    if (m_addRecordsStmt)
+    {
+        sqlite3_finalize(m_addRecordsStmt);
+        m_addRecordsStmt = NULL;
+    }
+
+    if (m_updateRecordsStmt)
+    {
+        sqlite3_finalize(m_updateRecordsStmt);
+        m_updateRecordsStmt = NULL;
     }
 
     return true;
@@ -91,45 +127,52 @@ string CWebVoyager::__getTableCreateSql__()
 bool CWebVoyager::addRecords(const vector<tstring>& _records)
 {
     if (_records.size() == 0)   return true;
+    if (!m_addRecordsStmt)      return false;
 
-    tstring sql = " INSERT INTO "   MAIN_RECORD_TABLE_NAME "(" \
-                                    MAIN_RECORD_TABLE_COL_CREATE_TIME ", " \
-                                    MAIN_RECORD_TABLE_COL_NAME ", " \
-                                    MAIN_RECORD_TABLE_COL_STATUS ") VALUES ( ?, ?, ?);";
-    int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql.c_str());
-    sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
-    if (!stmt)   return false;
+    SCOPED_GUARD(m_dbMutex);
 
     time_t now = time(NULL);
-    m_basicDB.beginTransact();
+    int z = m_basicDB.beginTransact();
+    ON_ERROR_PRINT_MSG_AND_DO(z, != , 0, "Fail to begin transaction.", return false);
+
     for (int i = 0; i < _records.size(); ++i)
     {
-        z = sqlite3_reset(stmt);
-        if (z == 0 &&
-            0 == sqlite3_bind_int(stmt,  1, now) &&
-            0 == sqlite3_bind_text(stmt, 2, _records[i].c_str(), _records[i].size(), SQLITE_STATIC) &&
-            0 == sqlite3_bind_int(stmt,  3, HTTPClient_t::STATUS_UNCHECK))
-        {
-            z = sqlite3_step(stmt);
-            if (SQLITE_DONE != z) // url existing
-            {
-                const char* msg = sqlite3_errmsg(m_basicDB);
-                if (SQLITE_CONSTRAINT == z)
-                {
-                    L4C_LOG_TRACE(msg << ": " << _records[i]);
-                }
-                else
-                {
-                    L4C_LOG_ERROR(msg << ": " << _records[i]);
-                }
-
-                z = sqlite3_reset(stmt);
-            }
-        }
-        else
+        z = m_basicDB.doStmt(m_addRecordsStmt, "%u, %s, %u", now, _records[i].c_str(), HTTPClient_t::STATUS_UNCHECK);
+        if (z != SQLITE_DONE && z != SQLITE_CONSTRAINT)
         {
             const char* msg = sqlite3_errmsg(m_basicDB);
             L4C_LOG_ERROR(msg << ": " << _records[i]);
+        }
+    }
+    z = m_basicDB.commit();
+    ON_ERROR_PRINT_MSG_AND_DO(z, != , 0, "Fail to commit db.", return false);
+
+    return true;
+}
+
+bool CWebVoyager::updateRecords()
+{
+    if (!m_HCRecords.size())    return true;
+    if (!m_updateRecordsStmt)   return false;
+
+    SCOPED_GUARD(m_dbMutex);
+
+    time_t now = time(NULL);
+    int z = m_basicDB.beginTransact();
+    ON_ERROR_PRINT_MSG_AND_DO(z, != , 0, "Fail to begin transaction.", return false);
+
+    {
+        SCOPED_GUARD(m_HCRecordsMutex);
+        vector<HTTPClientPtr>::iterator it = m_HCRecords.begin();
+        for (; it != m_HCRecords.end(); ++it)
+        {
+            z = m_basicDB.doStmt(m_updateRecordsStmt, "%u, %u, %u, %u", 
+                now, (*it)->status, (*it)->respCode, (*it)->id);
+            if (z != SQLITE_DONE)
+            {
+                const char* msg = sqlite3_errmsg(m_basicDB);
+                L4C_LOG_ERROR(msg << ": " << (*it)->url);
+            }
         }
     }
 
@@ -139,51 +182,10 @@ bool CWebVoyager::addRecords(const vector<tstring>& _records)
     return true;
 }
 
-bool CWebVoyager::updateRecords()
+bool CWebVoyager::updateRecord(HTTPClient_t* _hc)
 {
-    if (!m_HCRecords.size())   return false;
+    SCOPED_GUARD(m_dbMutex);
 
-    tstring sql = " UPDATE " MAIN_RECORD_TABLE_NAME " SET " \
-        MAIN_RECORD_TABLE_COL_VISIT_TIME "=?, "             \
-        MAIN_RECORD_TABLE_COL_STATUS "=?, "                 \
-        MAIN_RECORD_TABLE_COL_CODE "=?"                     \
-        " WHERE ID = ?;";
-
-    int z = m_basicDB.compile(MAIN_RECORD_TABLE_NAME, sql.c_str());
-    sqlite3_stmt* stmt = m_basicDB.getStatment(MAIN_RECORD_TABLE_NAME);
-    if (!stmt)   return false;
-
-    time_t now = time(NULL);
-    m_basicDB.beginTransact();
-    {
-        SCOPED_GUARD(m_HCRecordsMutex);
-        vector<HTTPClientPtr>::iterator it = m_HCRecords.begin();
-        for (; it != m_HCRecords.end(); ++it)
-        {
-            z = sqlite3_reset(stmt);
-            if (z == 0 &&
-                0 == sqlite3_bind_int(stmt, 1, now) &&
-                0 == sqlite3_bind_int(stmt, 2, (*it)->status) &&
-                0 == sqlite3_bind_int(stmt, 3, (*it)->respCode) &&
-                0 == sqlite3_bind_int(stmt, 4, (*it)->id))
-            {
-                z = sqlite3_step(stmt);
-                if (SQLITE_OK != z && SQLITE_DONE != z)
-                {
-                    const char* msg = sqlite3_errmsg(m_basicDB);
-                    L4C_LOG_ERROR(msg);
-                    sqlite3_reset(stmt);
-                }
-            }
-        }
-    }
-    m_basicDB.commit();
-
-    return true;
-}
-
-bool CWebVoyager::updateRecorde(HTTPClientPtr& _hc)
-{
     time_t now = time(NULL);
     CStdString sql;
     sql.Format(" UPDATE " MAIN_RECORD_TABLE_NAME " SET "     \
@@ -198,21 +200,25 @@ bool CWebVoyager::updateRecorde(HTTPClientPtr& _hc)
 
 void CWebVoyager::freeHC(HTTPClient_t* _hc)
 {
+    updateRecord(_hc);          // update the status in sqlite
     _hc->done();
 }
 
 void CWebVoyager::finishHttpRequest(HTTPClientPtr& _hc)
 {
+    L4C_LOG_INFO(++m_finishedCount << ": Finish status = " << HTTPClient_t::RequestStatusDesc[_hc->status] <<  \
+                                      ", code = " << _hc->request->response_code <<         \
+                                      " at " << _hc->url);
+
     if (_hc->respCode == HTTP_OK)
     {
-        CHttpUtils::ShowRequestInfo(_hc->request);
+        updateRecord(_hc.get());
 
         SCOPED_GUARD(m_HCRecordsMutex);
-        m_HCRecords.push_back(_hc);
+        m_HCRecords.push_back(_hc); 
     }
     else
     {
-        updateRecorde(_hc);
         freeHC(_hc.get());
     }
 }
@@ -230,13 +236,10 @@ void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
     else if (!_request)
     {
         hc->status = HTTPClient_t::STATUS_TIMEOUT;
-        L4C_LOG_INFO("Timeout to " << hc->url);
     }
     else
     {
-        L4C_LOG_INFO(hc->url << ": " << _request->response_code << " - " << _request->response_code_line);
-
-        hc->status = HTTPClient_t::STATUS_EXCEPTION;
+        hc->status = HTTPClient_t::STATUS_FAILED;
         hc->respCode = _request->response_code;
 
         switch (_request->response_code)
@@ -269,9 +272,7 @@ void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
 bool CWebVoyager::startRequest(HTTPClientPtr& _hc)
 {
     if (!_hc)   return false;
-
-    L4C_LOG_INFO("Request " << _hc->url);
-
+    
     const char* path = evhttp_uri_get_path(_hc->uri);
     if (_hc->type == IHttpRequest::Type::GET)
     {
@@ -292,9 +293,10 @@ bool CWebVoyager::startRequest(HTTPClientPtr& _hc)
         evhttp_make_request(_hc->conn, _hc->request, EVHTTP_REQ_POST, path ? "/" : path);
     }
 
-    CHttpUtils::ShowUrlInfo(_hc->uri);
-
     _hc->status = HTTPClient_t::STATUS_DOWNLOADING;
+
+    L4C_LOG_INFO(++m_issueCount << ": Request " << _hc->url);
+
     return true;
 }
 
@@ -307,7 +309,7 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
 {
     if (!_url)  return NULL;
 
-    HTTPClientPtr hc = CMemCreator<HTTPClient_t>::GetInstance()->create();
+    HTTPClientPtr hc = m_memAllocator->create();
     while (!hc && !isStop())
     {
         L4C_LOG_TRACE("Out of memory: Fail to allocate memory for http client.");
@@ -380,7 +382,8 @@ bool CWebVoyager::loadPage(URL_RECORD_t* _urlRecord)
 
     hc->id = _urlRecord->id;
     startRequest(hc);
-    
+    updateRecord(hc.get());
+
     return true;
 }
 
@@ -404,8 +407,6 @@ int CWebVoyager::getUrlRecords(vector<URL_RECORD_t*>& _v)
 
 int CWebVoyager::getHCRecords(vector<HTTPClientPtr>& _records)
 {
-    updateRecords();
-
     SCOPED_GUARD(m_HCRecordsMutex);
     _records.swap(m_HCRecords);
     return _records.size();
@@ -437,7 +438,7 @@ bool CWebVoyager::start()
     CCollectPipeline::GetInstance()->addTask(m_downloadTask);
     CCollectPipeline::GetInstance()->start();
 
-    CProcessPipeline::GetInstance()->addTask(m_firstProcessTask);
+    CProcessPipeline::GetInstance()->addTask(m_getFinishedRequestTask);
     CProcessPipeline::GetInstance()->addTask(m_digestTask);
     CProcessPipeline::GetInstance()->start();
 

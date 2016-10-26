@@ -4,11 +4,11 @@
 #include <fstream>
 
 
-CFirstProcessTask::CFirstProcessTask()
+CGetFinishedRequestTask::CGetFinishedRequestTask()
 {
 }
 
-void* CFirstProcessTask::operator()(void* _item)
+void* CGetFinishedRequestTask::operator()(void* _item)
 {
     CWebVoyager* voyager    = CWebVoyager::GetInstance();
     CPipeline* pipeline     = CProcessPipeline::GetInstance();
@@ -33,7 +33,6 @@ void* CFirstProcessTask::operator()(void* _item)
 
     return NULL;
 }
-
 
 
 void CDigestTask::process(HTTPClient_t* _hc)
@@ -88,8 +87,11 @@ void CDigestTask::process(HTTPClient_t* _hc)
 void* CDigestTask::operator()(void* _item)
 {
     HTTPClient_t* hc = (HTTPClient_t*)_item;
+    hc->status = HTTPClient_t::STATUS_PROCESSING;
+
     process(hc);    
 
+    hc->status = HTTPClient_t::STATUS_FINISHED;
     CWebVoyager::GetInstance()->freeHC(hc);
     return _item;
 }
