@@ -8,14 +8,14 @@
 /**
 * @Function: This task do nothing except decide when to stop
 **/
-class CGetFinishedRequestTask : public CSerialTask
+class CGetWebPageTask : public CSerialTask
 {
 public:
-    CGetFinishedRequestTask();
+    CGetWebPageTask();
     void* operator()(void* _item);
 
 private:
-    vector<HTTPClientPtr>   m_pendingRecords;
+    vector<HTTPClientRawPtr>   m_pendingRecords;
 };
 
 
@@ -25,7 +25,7 @@ public:
     void* operator()(void* _item);
 
 private:
-    void process(HTTPClient_t* hc);
+    void process(HTTPClientRawPtr hc);
 
 };
 

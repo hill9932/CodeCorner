@@ -21,9 +21,9 @@ public:
 
     
     int  getUrlRecords(vector<URL_RECORD_t*>& _records);
-    int  getHCRecords(vector<HTTPClientPtr>& _records);
+    int  getHCRecords(vector<HTTPClientRawPtr>& _records);
 
-    void freeHC(HTTPClient_t* hc);
+    void freeHC(HTTPClientRawPtr hc);
 
     /**
      * @Function: use compile statement to add all the new web name to database
@@ -40,7 +40,7 @@ public:
      * @Function: update the url records info after http request finished
      **/
     bool updateRecords();
-    bool updateRecord(HTTPClient_t* _hc);
+    bool updateRecord(HTTPClientRawPtr _hc);
 
 private:
     /**
@@ -67,21 +67,21 @@ private:
         const char* _data);
 
     bool startRequest(HTTPClientPtr& _hc);
-    void finishHttpRequest(HTTPClientPtr& _hc);
+    void finishHttpRequest(HTTPClientRawPtr _hc);
 
 private:
     std::thread             m_spiderThread;
     struct evdns_base*      m_dnsbase;
     struct event_base*      m_evbase;
 
-    u_int64                 m_issueCount;
-    u_int64                 m_finishedCount;
+    std::atomic_uint64_t    m_issueCount;
+    std::atomic_uint64_t    m_finishedCount;
 
     CMemCreator<HTTPClient_t>*  m_memAllocator;
-    vector<HTTPClientPtr>   m_HCRecords;
+    vector<HTTPClientRawPtr>   m_HCRecords;
     std::mutex              m_HCRecordsMutex;
 
-    CGetFinishedRequestTask m_getFinishedRequestTask;
+    CGetWebPageTask m_getWebPageTask;
     CDigestTask             m_digestTask;
 
     CCollectURLTask         m_collectUrlTask;

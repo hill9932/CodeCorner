@@ -23,7 +23,12 @@ void* CCollectURLTask::operator()(void* _item)
         }
 
         if (m_curRecordIndex < m_urlRecords.size())
-            return m_urlRecords[m_curRecordIndex++];
+        {
+            L4C_LOG_DEBUG("CCollectURLTask issue# " << ++m_issueCount << " with id = " << m_urlRecords[m_curRecordIndex]->id);
+            URL_RECORD_t* record = m_urlRecords[m_curRecordIndex++];
+            assert(record);
+            return record;
+        }
         else
             SleepMS(1);
     }
@@ -35,7 +40,13 @@ void* CDownloadTask::operator()(void* _item)
 {
     CWebVoyager* voyager = CWebVoyager::GetInstance();
     URL_RECORD_t* record = (URL_RECORD_t*)_item;
+
+    u_int64 issueCount = ++m_issueCount;
+
+    L4C_LOG_DEBUG("CDownloadTask issue# " << issueCount << " with id = " << record->id);
     voyager->loadPage(record);
+    L4C_LOG_DEBUG("CDownloadTask issue# " << issueCount << " with id = " << record->id << " finished.");
+
     delete record;
 
     return 0;

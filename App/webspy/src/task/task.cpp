@@ -15,6 +15,7 @@ void CPipeline::addTask(CTask& _task)
 void CPipeline::threadFunc()
 {
     m_pipeline.run(MAX_TOKEN_COUNT);
+    assert(false);
 }
 
 bool CPipeline::start()

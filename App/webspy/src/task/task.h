@@ -11,9 +11,15 @@ class CTask : public tbb::filter
 {
 public:
     CTask(bool _isSerial) : filter(_isSerial)
-    {}
+    {
+        m_issueCount = 0;
+    }
 
     bool virtual init() { return true; }
+
+protected:
+    std::atomic_uint64_t    m_issueCount;
+
 };
 
 

@@ -69,8 +69,10 @@ struct HTTPClient_t : public MemoryHint
         STATUS_DOWNLOADED   = 3,
         STATUS_PROCESSING   = 4,
         STATUS_FAILED       = 5,
-        STATUS_TIMEOUT      = 6,
-        STATUS_UNKNOWN      = 7,
+        STATUS_NOT_EXIST    = 6,
+        STATUS_NOT_FOUND    = 7,
+        STATUS_UNKNOWN      = 8,
+        STATUS_UNSUPPORT    = 9,
         STATUS_FINISHED     = 10,
         STATUS_ALL
     };
@@ -96,7 +98,7 @@ private:
     friend class CMemDeleter<HTTPClient_t>;
 };
 typedef shared_ptr<HTTPClient_t>    HTTPClientPtr;
-
+typedef HTTPClient_t*               HTTPClientRawPtr;
 
 
 #endif

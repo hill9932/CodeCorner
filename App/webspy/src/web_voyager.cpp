@@ -163,7 +163,7 @@ bool CWebVoyager::updateRecords()
 
     {
         SCOPED_GUARD(m_HCRecordsMutex);
-        vector<HTTPClientPtr>::iterator it = m_HCRecords.begin();
+        vector<HTTPClientRawPtr>::iterator it = m_HCRecords.begin();
         for (; it != m_HCRecords.end(); ++it)
         {
             z = m_basicDB.doStmt(m_updateRecordsStmt, "%u, %u, %u, %u", 
@@ -182,7 +182,7 @@ bool CWebVoyager::updateRecords()
     return true;
 }
 
-bool CWebVoyager::updateRecord(HTTPClient_t* _hc)
+bool CWebVoyager::updateRecord(HTTPClientRawPtr _hc)
 {
     SCOPED_GUARD(m_dbMutex);
 
@@ -198,44 +198,48 @@ bool CWebVoyager::updateRecord(HTTPClient_t* _hc)
     return 0 == doSql(sql, NULL);
 }
 
-void CWebVoyager::freeHC(HTTPClient_t* _hc)
+void CWebVoyager::freeHC(HTTPClientRawPtr _hc)
 {
+    if (_hc->request)
+    {
+        L4C_LOG_INFO(++m_finishedCount << ": Finish status = " << HTTPClient_t::RequestStatusDesc[_hc->status] << \
+            ", code = " << _hc->request->response_code << \
+            " at " << _hc->url << " with id = " << _hc->id);
+    }
+
     updateRecord(_hc);          // update the status in sqlite
     _hc->done();
 }
 
-void CWebVoyager::finishHttpRequest(HTTPClientPtr& _hc)
+void CWebVoyager::finishHttpRequest(HTTPClientRawPtr _hc)
 {
-    L4C_LOG_INFO(++m_finishedCount << ": Finish status = " << HTTPClient_t::RequestStatusDesc[_hc->status] <<  \
-                                      ", code = " << _hc->request->response_code <<         \
-                                      " at " << _hc->url);
-
     if (_hc->respCode == HTTP_OK)
     {
-        updateRecord(_hc.get());
+        updateRecord(_hc);
 
         SCOPED_GUARD(m_HCRecordsMutex);
         m_HCRecords.push_back(_hc); 
     }
     else
     {
-        freeHC(_hc.get());
+        freeHC(_hc);
     }
 }
 
 void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
 {
     CWebVoyager* voyager = CWebVoyager::GetInstance();
-    HTTPClient_t* hc = (HTTPClient_t*)_arg;
+    HTTPClientRawPtr hc = (HTTPClientRawPtr)_arg;
 
     if (!_arg)
     {
+        assert(false);
         hc->status = HTTPClient_t::STATUS_UNKNOWN;
         L4C_LOG_ERROR("Invalid parameters.");
     }
     else if (!_request)
     {
-        hc->status = HTTPClient_t::STATUS_TIMEOUT;
+        hc->status = HTTPClient_t::STATUS_NOT_EXIST;
     }
     else
     {
@@ -266,13 +270,15 @@ void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
         }
     }
 
-    voyager->finishHttpRequest(HTTPClientPtr(hc, NoneDeleter<HTTPClient_t>()));
+    voyager->finishHttpRequest(hc);
 }
 
 bool CWebVoyager::startRequest(HTTPClientPtr& _hc)
 {
     if (!_hc)   return false;
     
+    L4C_LOG_INFO(++m_issueCount << ": Request " << _hc->url << " with id = " << _hc->id);
+
     const char* path = evhttp_uri_get_path(_hc->uri);
     if (_hc->type == IHttpRequest::Type::GET)
     {
@@ -294,8 +300,6 @@ bool CWebVoyager::startRequest(HTTPClientPtr& _hc)
     }
 
     _hc->status = HTTPClient_t::STATUS_DOWNLOADING;
-
-    L4C_LOG_INFO(++m_issueCount << ": Request " << _hc->url);
 
     return true;
 }
@@ -328,6 +332,8 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
     if (!hc->uri)
     {
         L4C_LOG_ERROR("Fail to parse uri from: " << _url);
+
+        hc->status = HTTPClient_t::STATUS_UNSUPPORT;
         freeHC(hc.get());
         return HTTPClientPtr();
     }
@@ -382,6 +388,7 @@ bool CWebVoyager::loadPage(URL_RECORD_t* _urlRecord)
 
     hc->id = _urlRecord->id;
     startRequest(hc);
+
     updateRecord(hc.get());
 
     return true;
@@ -405,7 +412,7 @@ int CWebVoyager::getUrlRecords(vector<URL_RECORD_t*>& _v)
     return _v.size();
 }
 
-int CWebVoyager::getHCRecords(vector<HTTPClientPtr>& _records)
+int CWebVoyager::getHCRecords(vector<HTTPClientRawPtr>& _records)
 {
     SCOPED_GUARD(m_HCRecordsMutex);
     _records.swap(m_HCRecords);
@@ -438,7 +445,7 @@ bool CWebVoyager::start()
     CCollectPipeline::GetInstance()->addTask(m_downloadTask);
     CCollectPipeline::GetInstance()->start();
 
-    CProcessPipeline::GetInstance()->addTask(m_getFinishedRequestTask);
+    CProcessPipeline::GetInstance()->addTask(m_getWebPageTask);
     CProcessPipeline::GetInstance()->addTask(m_digestTask);
     CProcessPipeline::GetInstance()->start();
 

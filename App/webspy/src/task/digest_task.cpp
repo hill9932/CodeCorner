@@ -4,11 +4,11 @@
 #include <fstream>
 
 
-CGetFinishedRequestTask::CGetFinishedRequestTask()
+CGetWebPageTask::CGetWebPageTask()
 {
 }
 
-void* CGetFinishedRequestTask::operator()(void* _item)
+void* CGetWebPageTask::operator()(void* _item)
 {
     CWebVoyager* voyager    = CWebVoyager::GetInstance();
     CPipeline* pipeline     = CProcessPipeline::GetInstance();
@@ -17,10 +17,13 @@ void* CGetFinishedRequestTask::operator()(void* _item)
     {
         if (m_pendingRecords.size())
         {
-            HTTPClient_t* hc = m_pendingRecords.back().get();
+            HTTPClientRawPtr hc = m_pendingRecords.back();
             m_pendingRecords.pop_back();
-
+            
             hc->status = HTTPClient_t::STATUS_PROCESSING;
+            L4C_LOG_DEBUG("CGetWebPageTask issue# " << ++m_issueCount << " with id = " << hc->id);
+           
+            assert(hc);
             return hc;
         }
         else
@@ -35,7 +38,7 @@ void* CGetFinishedRequestTask::operator()(void* _item)
 }
 
 
-void CDigestTask::process(HTTPClient_t* _hc)
+void CDigestTask::process(HTTPClientRawPtr _hc)
 {
     if (!_hc || _hc->respCode != HTTP_OK)    return;
 
@@ -67,6 +70,10 @@ void CDigestTask::process(HTTPClient_t* _hc)
             fullStr =  scheme;
             fullStr += "://";
             fullStr += host;
+
+            if (str[0] != '/')
+                fullStr += "/";
+
             fullStr += str;
             v.push_back(fullStr);
         }
@@ -86,10 +93,15 @@ void CDigestTask::process(HTTPClient_t* _hc)
 
 void* CDigestTask::operator()(void* _item)
 {
-    HTTPClient_t* hc = (HTTPClient_t*)_item;
+    HTTPClientRawPtr hc = (HTTPClientRawPtr)_item;
     hc->status = HTTPClient_t::STATUS_PROCESSING;
 
+    u_int64 issueCount = ++m_issueCount;
+    L4C_LOG_DEBUG("CDigestTask issue# " << issueCount << " with id = " << hc->id);
+
     process(hc);    
+
+    L4C_LOG_DEBUG("CDigestTask issue# " << issueCount << " with id = " << hc->id << " finished.");
 
     hc->status = HTTPClient_t::STATUS_FINISHED;
     CWebVoyager::GetInstance()->freeHC(hc);

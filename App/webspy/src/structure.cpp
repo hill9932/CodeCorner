@@ -9,8 +9,10 @@ const char * HTTPClient_t::RequestStatusDesc[] =
     "STATUS_DOWNLOADED",
     "STATUS_PROCESSING",
     "STATUS_FAILED",
-    "STATUS_TIMEOUT",
+    "STATUS_NOT_EXIST",
+    "STATUS_NOT_FOUND",
     "STATUS_UNKNOWN",
+    "STATUS_UNSUPPORT",
     "STATUS_FINISHED",
 };
 
