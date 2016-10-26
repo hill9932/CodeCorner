@@ -182,6 +182,20 @@ bool CWebVoyager::updateRecords()
     return true;
 }
 
+bool CWebVoyager::updateRecorde(HTTPClientPtr& _hc)
+{
+    time_t now = time(NULL);
+    CStdString sql;
+    sql.Format(" UPDATE " MAIN_RECORD_TABLE_NAME " SET "     \
+                          MAIN_RECORD_TABLE_COL_VISIT_TIME "=%d, "             \
+                          MAIN_RECORD_TABLE_COL_STATUS "=%d, "                 \
+                          MAIN_RECORD_TABLE_COL_CODE "=%d"                     \
+               " WHERE ID = %d;", 
+               now, _hc->status, _hc->respCode, _hc->id);
+
+    return 0 == doSql(sql, NULL);
+}
+
 void CWebVoyager::freeHC(HTTPClient_t* _hc)
 {
     _hc->done();
@@ -198,6 +212,7 @@ void CWebVoyager::finishHttpRequest(HTTPClientPtr& _hc)
     }
     else
     {
+        updateRecorde(_hc);
         freeHC(_hc.get());
     }
 }
@@ -219,7 +234,7 @@ void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
     }
     else
     {
-        L4C_LOG_INFO(hc->url << ": " << _request->response_code);
+        L4C_LOG_INFO(hc->url << ": " << _request->response_code << " - " << _request->response_code_line);
 
         hc->status = HTTPClient_t::STATUS_EXCEPTION;
         hc->respCode = _request->response_code;
@@ -400,7 +415,10 @@ void CWebVoyager::spiderThreadFunc()
 {
     while (!isStop())
     {
-        event_base_dispatch(m_evbase);
+        int z = event_base_dispatch(m_evbase);
+        ON_ERROR_PRINT_MSG_AND_DO(z, == , -1, "Fail to call event_base_dispatch().", break);
+        ON_ERROR_PRINT_MSG_AND_DO(z, == , 1, "No more pending active.", SleepSec(3));
+
         L4C_LOG_INFO("Exit event loop.");
     }
 }

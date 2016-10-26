@@ -45,8 +45,12 @@ void HTTPClient_t::reset()
     {
         evhttp_request_free(request);
     }
-    if (uri)    evhttp_uri_free(uri);
-    if (conn)   evhttp_connection_free(conn);
+    else
+    {
+        if (conn)   evhttp_connection_free(conn);
+        if (uri)    evhttp_uri_free(uri);
+    }
+
 
     uri = NULL;
     conn = NULL;

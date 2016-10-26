@@ -19,7 +19,7 @@ private:
 };
 
 
-class CDigestTask : public CParallelTask
+class CDigestTask : public CSerialTask// CParallelTask
 {
 public:
     void* operator()(void* _item);

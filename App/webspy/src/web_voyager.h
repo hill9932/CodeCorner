@@ -40,6 +40,7 @@ public:
      * @Function: update the url records info after http request finished
      **/
     bool updateRecords();
+    bool updateRecorde(HTTPClientPtr& _hc);
 
 private:
     /**

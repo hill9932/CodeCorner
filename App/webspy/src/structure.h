@@ -45,6 +45,8 @@ struct MemoryHint
     void done();
     void undone();
 
+    virtual void reset() = 0;
+
 #if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
     void setDebugId(int _i)  { debugId = _i; }
     int  debugId;

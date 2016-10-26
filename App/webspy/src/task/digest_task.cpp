@@ -38,7 +38,7 @@ void* CFirstProcessTask::operator()(void* _item)
 
 void CDigestTask::process(HTTPClient_t* _hc)
 {
-    if (!_hc)    return;
+    if (!_hc || _hc->respCode != HTTP_OK)    return;
 
     struct evbuffer* evbuf = evhttp_request_get_input_buffer(_hc->request);
     const char* buf = (const char*)evbuffer_pullup(evbuf, -1);

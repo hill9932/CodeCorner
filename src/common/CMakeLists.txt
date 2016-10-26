@@ -38,7 +38,8 @@ set(COMMON_HEADER 	src/platform.h
 					src/system_.h
 					src/sqlite_.h
 					src/locker_.h
-					src/singleton.h)
+					src/singleton.h
+					src/hash.hxx)
 
 add_library(common STATIC ${COMMON_SRC} ${COMMON_HEADER})
 target_link_libraries(common lua)
