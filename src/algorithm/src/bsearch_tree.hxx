@@ -148,11 +148,15 @@ int CBSTree<T>::removeValue(const T& _value)
             p = p->rNode;   // get the most right child as the placement node
         nextNode = p;
 
-        p = nextNode->lNode;
+        if (nextNode->lNode)
+            p = nextNode->lNode;
         while (p && p->lNode)   p = p->lNode;
 
-        if (p)  p->lNode = node->lNode;         // the most left child point to the the left child of the removed node
-        if (node->lNode && p)    node->lNode->pNode = p;
+        if (p)      // the most left child point to the the left child of the removed node
+        {
+            p->lNode = node->lNode;         
+            node->lNode->pNode = p;
+        }
 
         nextNode->rNode = node->rNode;  // directly point to the right child of the removed node
         if (node->rNode)    node->rNode->pNode = nextNode;

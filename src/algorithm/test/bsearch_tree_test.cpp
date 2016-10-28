@@ -251,8 +251,8 @@ TEST_F(CBSTreeTester, addValue)
   3      40    70          104
  /       /    /          /       \
 1      39    60        102       111
-            /           \           \
-          52.3          103         120  
+            /           \           
+          52.3          103           
     */
     value = 60;
     m_BSTree.addValue(value);
@@ -264,7 +264,7 @@ TEST_F(CBSTreeTester, addValue)
     ASSERT_EQ(10, m_BSTree.getNodeCount());
     ASSERT_EQ(12, m_BSTree.getFreqCount());
 
-    value = 50.3;
+    value = 52.3;
     m_BSTree.addValue(value);
     ASSERT_EQ(11, m_BSTree.getNodeCount());
     ASSERT_EQ(13, m_BSTree.getFreqCount());
@@ -305,8 +305,8 @@ TEST_F(CBSTreeTester, delValue)
   3      40    70          104
  /       /    /          /       \
 1      39    60        102       111
-            /           \           \
-          52.3          103         120  
+            /           \           
+          52.3          103           
 */
     ASSERT_EQ(14, m_BSTree.getNodeCount());
     ASSERT_EQ(16, m_BSTree.getFreqCount());
@@ -349,15 +349,25 @@ TEST_F(CBSTreeTester, delValue)
     ASSERT_EQ(9, m_BSTree.getNodeCount());
     ASSERT_EQ(10, m_BSTree.getFreqCount());
 
-    /*
+/*
               40
         /            \
       39             70 
    /             /         \
   3            60          104
-              /          /       \
-             52.3      102       120
+              /          /       
+             52.3      102       
                         \           
                         103           
 */
+    value = 104;
+    ASSERT_EQ(0, m_BSTree.delValue(value));
+    value = 103;
+    node = m_BSTree.findNode(value);
+    ASSERT_EQ(102, node->lNode->data);
+
+    value = 102;
+    node = m_BSTree.findNode(value);
+    ASSERT_EQ(103, node->pNode->data);
+
 }
