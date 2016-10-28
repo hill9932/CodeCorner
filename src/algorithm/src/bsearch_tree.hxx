@@ -210,7 +210,33 @@ int CBSTree<T>::delValue(const T& _value)
 }
 
 template<typename T>
+void CBSTree<T>::midOrder(BSTreeNode<T>* _node, T* _buf, int& _n)
+{
+    if (!_node || !_buf)    return;
+    if (_node->lNode)   midOrder(_node->lNode, _buf, _n);
+    _buf[_n] = _node->data;
+    ++_n;
+    if (_node->rNode)   midOrder(_node->rNode, _buf, _n);
+}
+
+template<typename T>
 bool CBSTree<T>::validate()
 {
+    //shared_ptr<T> sortArray(new T[m_nodeCount], default_delete<T[]>());
+    std::unique_ptr<T[]> sortArray(new T[m_nodeCount]);
+
+    T* sortArrayPtr = sortArray.get();
+    int n = 0;
+    midOrder(m_root, sortArrayPtr, n);
+
+    for (int i = 0; i < m_nodeCount - 1; ++i)
+    {
+        if (sortArray[i] >= sortArray[i + 1])
+            assert(false);
+
+        cerr << sortArray[i] << ", ";
+    }
+    cerr << sortArray[m_nodeCount-1] << endl;
+
     return true;
 }

@@ -79,6 +79,7 @@ namespace LabSpace
         private:
             void delNode(BSTreeNode<T>* _node);
             void adjustHeight(BSTreeNode<T>* _node);
+            void midOrder(BSTreeNode<T>* _node, T* _buf, int& _n);
 
         private:
             BSTreeNode<T>*      m_root;
