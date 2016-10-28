@@ -21,7 +21,7 @@ CWebVoyager::CWebVoyager()
     m_evbase    = NULL;
     m_dnsbase   = NULL;
     m_issueCount     = 0;
-    m_finishedCount  = 0;
+    m_finishCount  = 0;
 }
 
 CWebVoyager::~CWebVoyager()
@@ -202,7 +202,7 @@ void CWebVoyager::freeHC(HTTPClientRawPtr _hc)
 {
     if (_hc->request)
     {
-        L4C_LOG_INFO(++m_finishedCount << ": Finish status = " << HTTPClient_t::RequestStatusDesc[_hc->status] << \
+        L4C_LOG_INFO(++m_finishCount << ": Finish status = " << HTTPClient_t::RequestStatusDesc[_hc->status] << \
             ", code = " << _hc->request->response_code << \
             " at " << _hc->url << " with id = " << _hc->id);
     }
@@ -262,7 +262,7 @@ void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
             case HTTP_MOVETEMP:
             {
                 const char* newLocation = evhttp_find_header(_request->input_headers, Response::Header::Location::Value);
-                HTTPClientPtr newHC = voyager->createHttpRequset(newLocation, IHttpRequest::Type::GET, 0, NULL, NULL);
+                HTTPClientRawPtr newHC = voyager->createHttpRequset(0, newLocation, IHttpRequest::Type::GET, 0, NULL, NULL);
                 voyager->startRequest(newHC);
 
                 break;
@@ -273,7 +273,7 @@ void CWebVoyager::HttpRequestCB(struct evhttp_request* _request, void* _arg)
     voyager->finishHttpRequest(hc);
 }
 
-bool CWebVoyager::startRequest(HTTPClientPtr& _hc)
+bool CWebVoyager::startRequest(HTTPClientRawPtr _hc)
 {
     if (!_hc)   return false;
     
@@ -304,7 +304,8 @@ bool CWebVoyager::startRequest(HTTPClientPtr& _hc)
     return true;
 }
 
-HTTPClientPtr CWebVoyager::createHttpRequset(
+HTTPClientRawPtr CWebVoyager::createHttpRequset(
+    u_int64 _id,
     const char* _url, 
     IHttpRequest::Type _requestType, 
     int _flag, 
@@ -324,9 +325,10 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
 
     if (!hc)
     {
-        return hc;
+        return NULL;
     }
 
+    hc->id   = _id;
     hc->url  = _url;
     hc->uri  = evhttp_uri_parse(hc->url.c_str());
     if (!hc->uri)
@@ -335,7 +337,7 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
 
         hc->status = HTTPClient_t::STATUS_UNSUPPORT;
         freeHC(hc.get());
-        return HTTPClientPtr();
+        return NULL;
     }
 
     const char* host = evhttp_uri_get_host(hc->uri);
@@ -376,20 +378,18 @@ HTTPClientPtr CWebVoyager::createHttpRequset(
     */
 
     hc->status = HTTPClient_t::STATUS_INITIALIZED;
-    return hc;
+    return hc.get();
 }
 
 bool CWebVoyager::loadPage(URL_RECORD_t* _urlRecord)
 {
     if (!_urlRecord || _urlRecord->name.empty()) return false;
 
-    HTTPClientPtr hc = createHttpRequset(_urlRecord->name.c_str(), IHttpRequest::Type::GET, 0, NULL, NULL);
+    HTTPClientRawPtr hc = createHttpRequset(_urlRecord->id, _urlRecord->name.c_str(), IHttpRequest::Type::GET, 0, NULL, NULL);
     if (!hc)    return false;
 
-    hc->id = _urlRecord->id;
     startRequest(hc);
-
-    updateRecord(hc.get());
+    updateRecord(hc);
 
     return true;
 }
@@ -444,11 +444,11 @@ bool CWebVoyager::start()
     CCollectPipeline::GetInstance()->addTask(m_collectUrlTask);
     CCollectPipeline::GetInstance()->addTask(m_downloadTask);
     CCollectPipeline::GetInstance()->start();
-
+    
     CProcessPipeline::GetInstance()->addTask(m_getWebPageTask);
     CProcessPipeline::GetInstance()->addTask(m_digestTask);
     CProcessPipeline::GetInstance()->start();
-
+    
     m_spiderThread = std::thread(&CWebVoyager::spiderThreadFunc, this);
     return m_spiderThread.joinable();
 }

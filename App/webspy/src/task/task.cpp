@@ -1,5 +1,6 @@
 #include "task.h"
 
+#define MAX_TOKEN_COUNT         20
 
 CPipeline::CPipeline()
 {
@@ -11,7 +12,6 @@ void CPipeline::addTask(CTask& _task)
     m_pipeline.add_filter(_task);
 }
 
-#define MAX_TOKEN_COUNT         64
 void CPipeline::threadFunc()
 {
     m_pipeline.run(MAX_TOKEN_COUNT);

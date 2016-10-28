@@ -3,8 +3,6 @@
 #
 project(net)
 
-include_directories("${PROJECT_ROOT_PATH}/src/common/src")
-
 #
 # include the source files
 #

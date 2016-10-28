@@ -31,6 +31,8 @@ void* CGetWebPageTask::operator()(void* _item)
             voyager->getHCRecords(m_pendingRecords);
             if (m_pendingRecords.size() == 0)
                 SleepMS(1);
+            else
+                L4C_LOG_INFO("CGetWebPageTask get " << m_pendingRecords.size() << " pages from internet.");
         }
     }
 

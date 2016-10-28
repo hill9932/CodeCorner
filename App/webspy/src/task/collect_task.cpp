@@ -15,11 +15,15 @@ void* CCollectURLTask::operator()(void* _item)
 
     while (!pipeline->isStop())
     {
-        if (m_curRecordIndex >= m_urlRecords.size())
+        if (m_curRecordIndex >= m_urlRecords.size() &&
+            voyager->getPendingRequest() < PROCESS_RECORDS_BATCH_COUNT)
         {
             m_curRecordIndex = 0;
             m_urlRecords.clear();
             voyager->getUrlRecords(m_urlRecords);
+
+            if (m_urlRecords.size())
+                L4C_LOG_INFO("CCollectURLTask get " << m_urlRecords.size() << " urls from database.");
         }
 
         if (m_curRecordIndex < m_urlRecords.size())

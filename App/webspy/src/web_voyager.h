@@ -42,6 +42,8 @@ public:
     bool updateRecords();
     bool updateRecord(HTTPClientRawPtr _hc);
 
+    u_int32 getPendingRequest() { return m_issueCount - m_finishCount; }
+
 private:
     /**
     * @Function: do some init work such as open the database and prepare the libevent resource
@@ -59,14 +61,15 @@ private:
     static int  GetMainRecordCallback(void* _context, int _argc, char** _argv, char** _szColName);
 
 private:
-    HTTPClientPtr createHttpRequset(
+    HTTPClientRawPtr createHttpRequset(
+        u_int64 _id,
         const char* _url, 
         IHttpRequest::Type _requestType, 
         int _flag, 
         const char* _contentType, 
         const char* _data);
 
-    bool startRequest(HTTPClientPtr& _hc);
+    bool startRequest(HTTPClientRawPtr _hc);
     void finishHttpRequest(HTTPClientRawPtr _hc);
 
 private:
@@ -75,7 +78,7 @@ private:
     struct event_base*      m_evbase;
 
     std::atomic_uint64_t    m_issueCount;
-    std::atomic_uint64_t    m_finishedCount;
+    std::atomic_uint64_t    m_finishCount;
 
     CMemCreator<HTTPClient_t>*  m_memAllocator;
     vector<HTTPClientRawPtr>   m_HCRecords;

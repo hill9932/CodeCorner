@@ -62,20 +62,25 @@ public:
     {
         for (int i = 0; i < s_poolSize; ++i)
         {
-            T* obj = new T;
+           T* obj = new T;
 
 #if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
             obj->setDebugId(i);
 #endif
             MemPtr memPtr(obj, m_deletor);   // specify CMemDelete<T> to delete the memory
             m_memPool.push_back(memPtr);
+            m_shadowMemPool.push_back(memPtr);
         }
-
+        
         return true;
     }
 
     MemPtr create()
     {
+  /*      MemPtr memPtr(new T, m_deletor);   // specify CMemDelete<T> to delete the memory
+        m_shadowMemPool.push_back(memPtr);
+        return memPtr;
+        */
         SCOPED_GUARD(m_poolMutex);
 
         if (m_memPool.size() == 0)
@@ -88,16 +93,9 @@ public:
         }
 
         MemPtr elem = m_memPool.back();
-        m_shadowMemPool.push_back(elem);
-        m_memPool.pop_back();
-        
-#if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
-        int n = m_deletor.getRespCount();
-        assert(n + m_shadowMemPool.size() + m_memPool.size() == s_poolSize);
-        L4C_LOG_DEBUG("Creator return " << elem->debugId);
-#endif
+        m_memPool.pop_back(); 
 
-        return elem;
+        return elem;        
     }
 
     void cleanup()
@@ -110,12 +108,6 @@ public:
                 assert((*it).use_count() == 1);
 
                 it = m_shadowMemPool.erase(it);
-
-#if defined(ENABLE_DEBUG_MEM_POOL_ASSERT)
-                int n2 = m_deletor.getRespCount();
-                int m2 = m_shadowMemPool.size();
-                assert(n2 + m2 == s_poolSize);
-#endif
             }
         }
     }

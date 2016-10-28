@@ -40,6 +40,7 @@ include_directories("${PROJECT_ROOT_PATH}/3rdParty/gtest-1.7.0/include")
 include_directories("${PROJECT_ROOT_PATH}/3rdParty/log4cplus-1.1.2/include")
 include_directories("${PROJECT_ROOT_PATH}/3rdParty/tbb42/include")
 include_directories("${PROJECT_ROOT_PATH}/test/incl")
+include_directories("${PROJECT_ROOT_PATH}/src/common/src")
 
 link_directories("${PROJECT_ROOT_PATH}/lib/${3DPARTY_LIB_DIR}")
 link_directories("${PROJECT_ROOT_PATH}/3rdParty/boost_1_60_0/stage64/lib")
@@ -49,6 +50,7 @@ link_directories("${PROJECT_ROOT_PATH}/3rdParty/boost_1_60_0/stage64/lib")
 #
 add_subdirectory(src/common)
 add_subdirectory(src/net)
+add_subdirectory(src/algorithm)
 
 #
 # include the applications

@@ -91,6 +91,7 @@ int main(int _argc, char* _argv[])
 
     L4C_LOG_INFO("Welcome to use webspy.");
     L4C_LOG_INFO("\tUsing libevent " << event_get_version());
+    L4C_LOG_INFO(endl << endl);
 
     CWebVoyager* webVoyager = CWebVoyager::GetInstance();
     webVoyager->start();
