@@ -27,6 +27,9 @@ public:
 template<class T>
 class CMemDeleter : public ISingleton<CMemDeleter<T> >
 {
+private:
+    CMemDeleter() {}
+
 public:
     typedef shared_ptr<T>   MemPtr;
 
@@ -49,12 +52,17 @@ public:
 
 private:
     static vector<MemPtr>  m_memPool;
+    friend class ISingleton<CMemDeleter<T>>;
+    friend class CMemCreator<T>;
 };
 
 
 template<class T>
 class CMemCreator : public ISingleton<CMemCreator<T> >
 {
+private:
+    CMemCreator() {}
+
 public:
     typedef shared_ptr<T>   MemPtr;
 
@@ -106,7 +114,6 @@ public:
             if ((*it)->finished)
             {
                 assert((*it).use_count() == 1);
-
                 it = m_shadowMemPool.erase(it);
             }
         }
@@ -120,6 +127,7 @@ private:
     CMemDeleter<T>  m_deletor;
 
     static const int s_poolSize = 100;
+    friend class ISingleton<CMemCreator<T> >;
 };
 
 

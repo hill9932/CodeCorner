@@ -73,7 +73,7 @@ namespace LabSpace
 
             void clear();
             bool validate();
-            int  getNodeCount() { return m_nodeCount; }
+            int  getNodeCount() { return m_nodesCount; }
             int  getFreqCount() { return m_freqCount; }
 
         private:
@@ -83,7 +83,7 @@ namespace LabSpace
 
         private:
             BSTreeNode<T>*      m_root;
-            int                 m_nodeCount;
+            int                 m_nodesCount;
             int                 m_freqCount;
         };
 

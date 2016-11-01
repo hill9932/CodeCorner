@@ -3,7 +3,7 @@ template<typename T>
 CBSTree<T>::CBSTree()
 {
     m_root = NULL;
-    m_nodeCount = 0;
+    m_nodesCount = 0;
     m_freqCount = 0;
 }
 
@@ -45,7 +45,7 @@ int CBSTree<T>::addValue(const T& _value)
     {
         m_root = new BSTreeNode<T>;
         m_root->data = _value;
-        ++m_nodeCount;
+        ++m_nodesCount;
         ++m_freqCount;
         return 1;
     }
@@ -80,7 +80,7 @@ int CBSTree<T>::addValue(const T& _value)
     }
     else
     {
-        ++m_nodeCount;
+        ++m_nodesCount;
         ++m_freqCount;
         BSTreeNode<T>* newNode = new BSTreeNode<T>;     
         newNode->data  = _value;
@@ -188,7 +188,7 @@ int CBSTree<T>::removeValue(const T& _value)
 
     int freq = node->freq;
     delete node;
-    --m_nodeCount;
+    --m_nodesCount;
     m_freqCount -= freq;
 
     return freq;
@@ -223,20 +223,20 @@ template<typename T>
 bool CBSTree<T>::validate()
 {
     //shared_ptr<T> sortArray(new T[m_nodeCount], default_delete<T[]>());
-    std::unique_ptr<T[]> sortArray(new T[m_nodeCount]);
+    std::unique_ptr<T[]> sortArray(new T[m_nodesCount]);
 
     T* sortArrayPtr = sortArray.get();
     int n = 0;
     midOrder(m_root, sortArrayPtr, n);
 
-    for (int i = 0; i < m_nodeCount - 1; ++i)
+    for (int i = 0; i < m_nodesCount - 1; ++i)
     {
         if (sortArray[i] >= sortArray[i + 1])
             assert(false);
 
         cerr << sortArray[i] << ", ";
     }
-    cerr << sortArray[m_nodeCount-1] << endl;
+    cerr << sortArray[m_nodesCount-1] << endl;
 
     return true;
 }

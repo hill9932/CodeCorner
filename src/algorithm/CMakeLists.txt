@@ -12,7 +12,9 @@ include_directories("${PROJECT_ROOT_PATH}/src/algorithm/src")
 set(SOURCES 	src/trie_tree.cpp)
 set(HEADERS 	src/trie_tree.h
 				src/bsearch_tree.h
-				src/bsearch_tree.hxx)
+				src/bsearch_tree.hxx
+				src/min_max_heap.h
+				src/min_max_heap.hxx)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
 add_dependencies(${PROJECT_NAME} common)
@@ -29,7 +31,8 @@ project(${PROJECT_TEST_NAME})
 
 set(TEST_SOURCES	test/main.cpp
 					test/trie_tree_test.cpp
-					test/bsearch_tree_test)
+					test/bsearch_tree_test.cpp
+					test/heap_test.cpp)
 
 add_executable(${PROJECT_TEST_NAME} ${TEST_SOURCES})
 add_dependencies(${PROJECT_TEST_NAME} ${PROJECT_NAME})
