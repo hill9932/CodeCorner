@@ -45,20 +45,20 @@ void CHeap<KEY, DATA, SIZE>::maxOrMinHeap(int _index, CompFunc _func)
     if (left > MaxIndex)    return;
 
     if (right <= MaxIndex && 
-        _func(m_nodes[right].key, m_nodes[left].key))
+        _func(m_nodes[right].key, m_nodes[left].key))       // find the bigger one for max heap
         largest = right;
 
-    if (_func(m_nodes[largest].key, m_nodes[_index].key))
+    if (_func(m_nodes[largest].key, m_nodes[_index].key))   // when parent smaller than the children in max heap
     {
         exchangeNodes(_index, largest);
-        maxOrMinHeap(largest, _func);
+        maxOrMinHeap(largest, _func);       // from top to down to redjust again
     }
 }
 
 template<typename KEY, typename DATA, int SIZE>
 void CHeap<KEY, DATA, SIZE>::createMaxHeap()
 {
-    for (int i = m_nodesCount / 2 - 1; i >= 0; --i)
+    for (int i = m_nodesCount / 2 - 1; i >= 0; --i)     // from down to top 
         maxOrMinHeap(i, IsBigger<KEY>);
 }
 
@@ -89,13 +89,17 @@ int CHeap<KEY, DATA, SIZE>::addNode(const NodeType& _node)
 template<typename KEY, typename DATA, int SIZE>
 void CHeap<KEY, DATA, SIZE>::sortHeap()
 {
+    int keepCount = m_nodesCount;
+
     int i;
     createMaxHeap();
     for (i = m_nodesCount - 1; i >= 1; i--)
     {
         exchangeNodes(i, 0);
+        --m_nodesCount;     // the biggest is in the last position, so skip it
         maxOrMinHeap(0, IsBigger<KEY>);
     }
+    m_nodesCount = keepCount;
 }
 
 template<typename KEY, typename DATA, int SIZE>
