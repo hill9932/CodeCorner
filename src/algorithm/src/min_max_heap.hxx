@@ -105,6 +105,7 @@ void CHeap<KEY, DATA, SIZE>::sortHeap()
 template<typename KEY, typename DATA, int SIZE>
 bool CHeap<KEY, DATA, SIZE>::validate()
 {
+    cerr << endl;
     for (int i = 0; i < m_nodesCount; ++i)
     {
         cerr << m_nodes[i].key << ", ";
@@ -112,4 +113,32 @@ bool CHeap<KEY, DATA, SIZE>::validate()
     cerr << endl;
 
     return true;
+}
+
+template<typename KEY, typename DATA, int SIZE>
+bool CTopNHeap<KEY, DATA, SIZE>::checkNode(const NodeType* _node)
+{
+    if (!_node) return false;
+
+    if (m_nodesCount != SIZE)
+    {
+        addNode(_node);
+        return true;
+    }
+
+    if (IsBigger(_node->key, m_nodes[0].key))
+    {
+        m_nodes[0].key  = _node->key;
+        m_nodes[0].data = _node->data;
+        maxOrMinHeap(0, IsSmaller<KEY>);
+        return true;
+    }
+
+    return false;
+}
+
+template<typename KEY, typename DATA, int SIZE>
+bool CTopNHeap<KEY, DATA, SIZE>::checkNode(const NodeType& _node)
+{
+    return checkNode(&_node);
 }
