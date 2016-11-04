@@ -73,6 +73,13 @@ namespace LabSpace
             return errMsg;
         }
 
+        int Util::Random(int _low, int _high)
+        {
+            int size = _high - _low + 1;
+            return _low + rand() % size;
+        }
+
+
         tstring Util::ChangeUnit(u_int64 _count, u_int32 _unit, const tchar* _suffix, int _maxLevel)
         {
             if (!_suffix)   return " ";

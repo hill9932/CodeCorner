@@ -18,6 +18,7 @@ namespace LabSpace
             static tstring  GetLastSysErrorMessage(u_int32 _errCode = 0, bool _herror = false);
             static u_int32  GetLastSysError(bool _herror = false);
             static void     SetLastSysError(u_int32 _errCode);
+            static int      Random(int _low, int _high);
 
             static tstring  ChangeUnit(u_int64 _count, u_int32 _unit, const tchar* _suffix, int _maxLevel);
 

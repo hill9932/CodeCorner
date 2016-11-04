@@ -54,6 +54,7 @@ TEST(TEST_CASE_NAME, TopNHeap)
     typedef CTopNHeap<int, string, TopHeapSize> CMyTopHeap;
 
     CMyHeap     myHeap;
+    CMyHeap     myTopNHeap;
     CMyTopHeap  myTopHeap;
 
     srand(time(NULL));
@@ -62,14 +63,15 @@ TEST(TEST_CASE_NAME, TopNHeap)
         CMyHeap::NodeType node;
         node.key = rand();
         myHeap.addNode(node);
+        myTopNHeap.addNode(node);
         myTopHeap.checkNode(node);
     }
 
     myHeap.sortHeap();
-//    myHeap.validate();
+    myHeap.validate();
 
     myTopHeap.sortHeap();
-//    myTopHeap.validate();
+    myTopHeap.validate();
 
     for (int i = 0; i < TopHeapSize; ++i)
     {
@@ -77,4 +79,45 @@ TEST(TEST_CASE_NAME, TopNHeap)
         CMyHeap::NodeType* node2 = myHeap.getNode(HeapSize - TopHeapSize + i);
         ASSERT_EQ(node1->key, node2->key);
     }
+
+    //
+    // the top N min elements are in the front of the sorted heap
+    //
+    myTopNHeap.selectMinN(TopHeapSize);
+    for (int i = 0; i < TopHeapSize; ++i)
+    {
+        int j = 0;
+        CMyHeap::NodeType* node = myTopNHeap.getNode(i);
+        cerr << node->key << ", ";
+
+        for (j = 0; j < TopHeapSize; ++j)
+        {
+            CMyHeap::NodeType* checkNode = myHeap.getNode(j);
+            if (node->key == checkNode->key)
+                break;
+        }
+        ASSERT_TRUE(j < TopHeapSize);
+    }
+    cerr << endl;
+
+    //
+    // the top N max elements are in the top N heap
+    //
+    myTopNHeap.selectMaxN(TopHeapSize);
+    for (int i = 0; i < TopHeapSize; ++i)
+    {
+        int j = 0;
+        CMyHeap::NodeType* node = myTopNHeap.getNode(i);
+        cerr << node->key << ", ";
+
+        for (j = 0; j < TopHeapSize; ++j)
+        {
+            CMyHeap::NodeType* checkNode = myTopHeap.getNode(j);
+            if (node->key == checkNode->key)
+                break;
+        }
+        ASSERT_TRUE(j < TopHeapSize);
+    }
+    cerr << endl;
+
 }

@@ -26,12 +26,103 @@ bool IsSmaller(const T& _l, const T& _r)
 template<typename KEY, typename DATA, int SIZE>
 void CHeap<KEY, DATA, SIZE>::exchangeNodes(int _l, int _r)
 {
+    if (_l == _r)   return;
+
     KEY  lKey  = m_nodes[_l].key;
     DATA lData = m_nodes[_l].data;
     m_nodes[_l].key  = m_nodes[_r].key;
     m_nodes[_l].data = m_nodes[_r].data;
     m_nodes[_r].key  = lKey;
     m_nodes[_r].data = lData;
+}
+
+template<typename KEY, typename DATA, int SIZE>
+int CHeap<KEY, DATA, SIZE>::partition(int _left, int _right, CompFunc _func)
+{
+    if (_left  < 0 ||
+        _right < 0 ||
+        _left  >= m_nodesCount ||
+        _right >= m_nodesCount)
+        return -1;
+
+    KEY pivot = m_nodes[_right].key;
+    int pos = _left - 1;
+    for (int i = _left; i < _right; ++i)
+    {
+        if (_func(m_nodes[i].key, pivot))
+            exchangeNodes(++pos, i);
+    }
+    exchangeNodes(++pos, _right);
+    return pos;
+}
+
+template<typename KEY, typename DATA, int SIZE>
+int CHeap<KEY, DATA, SIZE>::choosePivotByRandom(int _left, int _right)
+{
+    return LabSpace::Common::Util::Random(_left, _right);
+}
+
+template<typename KEY, typename DATA, int SIZE>
+int CHeap<KEY, DATA, SIZE>::choosePivotByMedian(int _left, int _right)
+{
+    int mid = (_left + _right) / 2;
+    if (m_nodes[_left].key > m_nodes[_right].key &&
+        m_nodes[_left].key > m_nodes[mid].key)
+        return m_nodes[_right].key > m_nodes[mid].key ? _right : mid;
+
+    else if (m_nodes[_right].key > m_nodes[_left].key &&
+             m_nodes[_right].key > m_nodes[mid].key)
+        return m_nodes[_left].key > m_nodes[mid].key ? _left : mid;
+
+    else if (m_nodes[mid].key > m_nodes[_right].key &&
+          m_nodes[mid].key > m_nodes[_left].key)
+        return m_nodes[_right].key > m_nodes[_left].key ? _right : _left;
+}
+
+template<typename KEY, typename DATA, int SIZE>
+int CHeap<KEY, DATA, SIZE>::choosePivotByDirect(int _left, int _right)
+{
+    return _right;
+}
+
+template<typename KEY, typename DATA, int SIZE>
+bool CHeap<KEY, DATA, SIZE>::selectMaxN(int _left, int _right, int _k)
+{
+    int index = choosePivotByRandom(_left, _right);
+    exchangeNodes(index, _right);
+    int pos = partition(_left, _right, IsBigger<KEY>);
+    if (pos == _k - 1)
+        return true;
+    else if (pos > _k - 1)
+        return selectMaxN(_left, pos - 1, _k);
+    else
+        return selectMaxN(pos + 1, _right, _k);
+}
+
+template<typename KEY, typename DATA, int SIZE>
+bool CHeap<KEY, DATA, SIZE>::selectMaxN(int _k)
+{
+    return selectMaxN(0, m_nodesCount - 1, _k);
+}
+
+template<typename KEY, typename DATA, int SIZE>
+bool CHeap<KEY, DATA, SIZE>::selectMinN(int _left, int _right, int _k)
+{
+    int index = choosePivotByMedian(_left, _right);
+    exchangeNodes(index, _right);
+    int pos = partition(_left, _right, IsSmaller<KEY>);
+    if (pos == _k - 1)
+        return true;
+    else if (pos > _k - 1)
+        return selectMinN(_left, pos - 1, _k);
+    else
+        return selectMinN(pos + 1, _right, _k);
+}
+
+template<typename KEY, typename DATA, int SIZE>
+bool CHeap<KEY, DATA, SIZE>::selectMinN(int _k)
+{
+    return selectMinN(0, m_nodesCount - 1, _k);
 }
 
 template<typename KEY, typename DATA, int SIZE>

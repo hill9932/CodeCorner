@@ -28,6 +28,8 @@ namespace LabSpace
             void createMinHeap();
             void sortHeap();
             bool validate();
+            bool selectMaxN(int _k);
+            bool selectMinN(int _k);
 
             NodeType* getNode(int _index) 
             { 
@@ -42,6 +44,14 @@ namespace LabSpace
 
             void maxOrMinHeap(int _nodeLevel, CompFunc _func);
             void exchangeNodes(int _l, int _r);
+
+        private:
+            int  partition(int _left, int _right, CompFunc _func);
+            int  choosePivotByRandom(int _left, int _right);
+            int  choosePivotByMedian(int _left, int _right);
+            int  choosePivotByDirect(int _left, int _right);
+            bool selectMaxN(int _left, int _right, int _k);
+            bool selectMinN(int _left, int _right, int _k);
 
         protected:
             std::unique_ptr<NodeType[]>   m_nodes;
