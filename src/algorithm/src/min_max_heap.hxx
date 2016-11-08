@@ -57,30 +57,32 @@ int CHeap<KEY, DATA, SIZE>::partition(int _left, int _right, CompFunc _func)
 }
 
 template<typename KEY, typename DATA, int SIZE>
-int CHeap<KEY, DATA, SIZE>::choosePivotByRandom(int _left, int _right)
+int CHeap<KEY, DATA, SIZE>::choosePivotByRandom(int _left, int _right, int _k)
 {
     return LabSpace::Common::Util::Random(_left, _right);
 }
 
 template<typename KEY, typename DATA, int SIZE>
-int CHeap<KEY, DATA, SIZE>::choosePivotByMedian(int _left, int _right)
+int CHeap<KEY, DATA, SIZE>::choosePivotByMedian(int _left, int _right, int _k)
 {
-    int mid = (_left + _right) / 2;
-    if (m_nodes[_left].key > m_nodes[_right].key &&
-        m_nodes[_left].key > m_nodes[mid].key)
-        return m_nodes[_right].key > m_nodes[mid].key ? _right : mid;
+    if (_k - 1 > _right || _k - 1 < _left)
+        return -1;
 
-    else if (m_nodes[_right].key > m_nodes[_left].key &&
-             m_nodes[_right].key > m_nodes[mid].key)
-        return m_nodes[_left].key > m_nodes[mid].key ? _left : mid;
+    int midIndex = (_left + _right) / 2;
+    if (m_nodes[_left].key < m_nodes[midIndex].key)
+        exchangeNodes(_left, midIndex);
 
-    else if (m_nodes[mid].key > m_nodes[_right].key &&
-          m_nodes[mid].key > m_nodes[_left].key)
-        return m_nodes[_right].key > m_nodes[_left].key ? _right : _left;
+    if (m_nodes[_right].key < m_nodes[midIndex].key)
+        exchangeNodes(_right, midIndex);
+
+    if (m_nodes[_right].key < m_nodes[_left].key)
+        exchangeNodes(_right, _left);
+
+    return _left;
 }
 
 template<typename KEY, typename DATA, int SIZE>
-int CHeap<KEY, DATA, SIZE>::choosePivotByDirect(int _left, int _right)
+int CHeap<KEY, DATA, SIZE>::choosePivotByDirect(int _left, int _right, int _k)
 {
     return _right;
 }
@@ -88,7 +90,7 @@ int CHeap<KEY, DATA, SIZE>::choosePivotByDirect(int _left, int _right)
 template<typename KEY, typename DATA, int SIZE>
 bool CHeap<KEY, DATA, SIZE>::selectMaxN(int _left, int _right, int _k)
 {
-    int index = choosePivotByRandom(_left, _right);
+    int index = choosePivotByRandom(_left, _right, _k);
     exchangeNodes(index, _right);
     int pos = partition(_left, _right, IsBigger<KEY>);
     if (pos == _k - 1)
@@ -108,7 +110,7 @@ bool CHeap<KEY, DATA, SIZE>::selectMaxN(int _k)
 template<typename KEY, typename DATA, int SIZE>
 bool CHeap<KEY, DATA, SIZE>::selectMinN(int _left, int _right, int _k)
 {
-    int index = choosePivotByMedian(_left, _right);
+    int index = choosePivotByMedian(_left, _right, _k);
     exchangeNodes(index, _right);
     int pos = partition(_left, _right, IsSmaller<KEY>);
     if (pos == _k - 1)
@@ -136,13 +138,13 @@ void CHeap<KEY, DATA, SIZE>::maxOrMinHeap(int _index, CompFunc _func)
     if (left > MaxIndex)    return;
 
     if (right <= MaxIndex && 
-        _func(m_nodes[right].key, m_nodes[left].key))       // find the bigger one for max heap
+        _func(m_nodes[right].key, m_nodes[left].key))       // find the bigger/smaller one for max heap
         largest = right;
 
-    if (_func(m_nodes[largest].key, m_nodes[_index].key))   // when parent smaller than the children in max heap
+    if (_func(m_nodes[largest].key, m_nodes[_index].key))   // when parent smaller/bigger than the children in max heap
     {
         exchangeNodes(_index, largest);
-        maxOrMinHeap(largest, _func);       // from top to down to redjust again
+        maxOrMinHeap(largest, _func);       // from top to down to adjust again
     }
 }
 
@@ -207,25 +209,44 @@ bool CHeap<KEY, DATA, SIZE>::validate()
 }
 
 template<typename KEY, typename DATA, int SIZE>
+bool CTopNHeap<KEY, DATA, SIZE>::validate()
+{
+    CHeap::validate();
+
+    for (int i = 0; i < m_nodesCount; ++i)
+    {
+        if (IsBigger(m_nodes[0].key, m_nodes[i].key))
+        {
+            cerr << "Exception" << endl;
+        }
+        assert(m_nodes[0].key <= m_nodes[i].key);
+    }
+    return true;
+}
+
+template<typename KEY, typename DATA, int SIZE>
 bool CTopNHeap<KEY, DATA, SIZE>::checkNode(const NodeType* _node)
 {
     if (!_node) return false;
 
+    bool r = false;
     if (m_nodesCount != SIZE)
     {
         addNode(_node);
-        return true;
-    }
+        createMinHeap();
 
-    if (IsBigger(_node->key, m_nodes[0].key))
+        r = true;
+    }
+    else if (IsBigger(_node->key, m_nodes[0].key))
     {
         m_nodes[0].key  = _node->key;
         m_nodes[0].data = _node->data;
-        maxOrMinHeap(0, IsSmaller<KEY>);
-        return true;
+        maxOrMinHeap(0, IsSmaller<KEY>);    // since replace the [0] node, so only adjust the [0] node
+
+        r = true;
     }
 
-    return false;
+    return r;
 }
 
 template<typename KEY, typename DATA, int SIZE>

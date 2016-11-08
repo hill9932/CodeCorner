@@ -47,9 +47,9 @@ namespace LabSpace
 
         private:
             int  partition(int _left, int _right, CompFunc _func);
-            int  choosePivotByRandom(int _left, int _right);
-            int  choosePivotByMedian(int _left, int _right);
-            int  choosePivotByDirect(int _left, int _right);
+            int  choosePivotByRandom(int _left, int _right, int _k);
+            int  choosePivotByMedian(int _left, int _right, int _k);
+            int  choosePivotByDirect(int _left, int _right, int _k);
             bool selectMaxN(int _left, int _right, int _k);
             bool selectMinN(int _left, int _right, int _k);
 
@@ -68,6 +68,9 @@ namespace LabSpace
         public:
             bool checkNode(const NodeType* _node);
             bool checkNode(const NodeType& _node);
+
+        private:
+            bool validate();
         };
 
         #include "min_max_heap.hxx"

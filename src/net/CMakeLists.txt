@@ -11,7 +11,9 @@ set(NET_SRC 	src/inetaddr.cpp
 				src/socket_tcp.cpp
 				src/socket_udp.cpp)
 set(NET_HEADER 	src/inetaddr.h
-				src/socket_base.h)
+				src/socket_base.h
+				src/protocol.h
+				src/protocol_port.h)
 
 add_library(net STATIC ${NET_SRC} ${NET_HEADER})
 add_dependencies(net common)
