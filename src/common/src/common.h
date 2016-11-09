@@ -5,6 +5,9 @@
 #include "locker_.h"
 
 
+#define SAFE_DELETE(x) { if (x != NULL) delete x; x = NULL; }
+
+
 namespace LabSpace
 {
     namespace Common

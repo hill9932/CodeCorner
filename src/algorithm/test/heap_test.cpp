@@ -9,7 +9,7 @@ using namespace LabSpace::algorithm;
 TEST(TEST_CASE_NAME, CreateHeap)
 {
     cerr << "Round ";
-    for (int n = 0; n < 100; ++n)
+    for (int n = 0; n < 1; ++n)
     {
         cerr << n + 1 << ", ";
 
@@ -68,7 +68,7 @@ TEST(TEST_CASE_NAME, TopNHeap)
     }
 
     cerr << "Round ";
-    for (int n = 0; n < 100; ++n)
+    for (int n = 0; n < 1; ++n)
     {
         cerr << n + 1 << ", ";
 

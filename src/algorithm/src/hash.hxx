@@ -1,5 +1,5 @@
 #ifndef __HL_HASHALG_INCLUDE_H__
-#define __HL_SHASALG_INCLUDE_H__
+#define __HL_HASHALG_INCLUDE_H__
 
 template<class T>
 size_t BKDRHash(const T *str)
@@ -113,8 +113,8 @@ size_t FNVHash(const T* str)
 template<class T>
 size_t DJBHash(const T *str)
 {
-    if (!*str)   // 这是由本人添加，以保证空字符串返回哈希值0  
-        return 0;
+    if (!*str)  return 0;
+
     register size_t hash = 5381;
     while (size_t ch = (size_t)*str++)
     {
@@ -128,8 +128,7 @@ size_t DJBHash(const T *str)
 template<class T>
 size_t DJB2Hash(const T *str)
 {
-    if (!*str)   // 这是由本人添加，以保证空字符串返回哈希值0  
-        return 0;
+    if (!*str) return 0;
     register size_t hash = 5381;
     while (size_t ch = (size_t)*str++)
     {
