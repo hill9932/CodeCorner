@@ -6,24 +6,26 @@ namespace LabSpace
 {
     namespace algorithm
     {
-        template<typename KEY, typename DATA>
+        template<typename KEY_T, typename DATA_T>
         struct HeapNode
         {
-            KEY     key;
-            DATA    data;
+            KEY_T     key;
+            DATA_T    data;
         };
 
 
-        template<typename KEY, typename DATA, int SIZE>
+        template<typename KEY_T, typename DATA_T, int SIZE>
         class CHeap
         {
         public:
+            typedef HeapNode<KEY_T, DATA_T> HeapNode_t;
+            typedef HeapNode_t*             HeapNodePtr;
+
             CHeap();
             ~CHeap();
 
-            typedef HeapNode<KEY, DATA> NodeType;
-            int addNode(const NodeType* _node);
-            int addNode(const NodeType& _node);
+            int addNode(const HeapNode_t* _node);
+            int addNode(const HeapNode_t& _node);
             void createMaxHeap();
             void createMinHeap();
             void sortHeap();
@@ -31,16 +33,16 @@ namespace LabSpace
             bool selectMaxN(int _k);
             bool selectMinN(int _k);
 
-            NodeType* getNode(int _index) 
+            HeapNodePtr getNode(int _index)
             { 
                 if (_index >= m_nodesCount) return NULL;
                 return &m_nodes[_index];
             }
-            NodeType* getNodes(){ return m_nodes.get(); }
+            HeapNodePtr getNodes(){ return m_nodes.get(); }
             int getNodesCount() { return m_nodesCount; }
 
         protected:
-            typedef bool(*CompFunc)(const KEY&, const KEY&);
+            typedef bool(*CompFunc)(const KEY_T&, const KEY_T&);
 
             void maxOrMinHeap(int _nodeLevel, CompFunc _func);
             void exchangeNodes(int _l, int _r);
@@ -54,7 +56,7 @@ namespace LabSpace
             bool selectMinN(int _left, int _right, int _k);
 
         protected:
-            std::unique_ptr<NodeType[]>   m_nodes;
+            std::unique_ptr<HeapNode_t[]>   m_nodes;
             int m_nodesCount;
         };
 
@@ -62,12 +64,12 @@ namespace LabSpace
         /**
          * @Function: use top min heap
          **/
-        template<typename KEY, typename DATA, int SIZE>
-        class CTopNHeap : public CHeap<KEY, DATA, SIZE>
+        template<typename KEY_T, typename DATA_T, int SIZE>
+        class CTopNHeap : public CHeap<KEY_T, DATA_T, SIZE>
         {
         public:
-            bool checkNode(const NodeType* _node);
-            bool checkNode(const NodeType& _node);
+            bool checkNode(const HeapNode_t* _node);
+            bool checkNode(const HeapNode_t& _node);
 
         private:
             bool validate();

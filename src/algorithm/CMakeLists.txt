@@ -17,7 +17,9 @@ set(HEADERS 	src/trie_tree.h
 				src/min_max_heap.hxx
 				src/hash.hxx
 				src/hash_map.h
-				src/hash_map.hxx)
+				src/hash_map.hxx
+				src/sort_array.h
+				src/sort_array.hxx)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
 add_dependencies(${PROJECT_NAME} common)
@@ -36,7 +38,8 @@ set(TEST_SOURCES	test/main.cpp
 					test/trie_tree_test.cpp
 					test/bsearch_tree_test.cpp
 					test/heap_test.cpp
-					test/hash_map_test.cpp)
+					test/hash_map_test.cpp
+					test/sort_array_test.cpp)
 
 add_executable(${PROJECT_TEST_NAME} ${TEST_SOURCES})
 add_dependencies(${PROJECT_TEST_NAME} ${PROJECT_NAME})

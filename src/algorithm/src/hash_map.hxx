@@ -1,8 +1,8 @@
 #include "hash.hxx"
 
 
-template<typename DATA>
-CHashMap<DATA>::CHashMap()
+template<typename DATA_T>
+CHashMap<DATA_T>::CHashMap()
 {
     HashNodePtr* nodes = new HashNodePtr[HASHLEN];
     bzero(nodes, sizeof(nodes) * HASHLEN);
@@ -10,8 +10,8 @@ CHashMap<DATA>::CHashMap()
     m_nodesCount = 0;
 }
 
-template<typename DATA>
-CHashMap<DATA>::~CHashMap()
+template<typename DATA_T>
+CHashMap<DATA_T>::~CHashMap()
 {
     for (int i = 0; i < HASHLEN; ++i)
     {
@@ -26,8 +26,8 @@ CHashMap<DATA>::~CHashMap()
     }
 }
 
-template<typename DATA>
-typename CHashMap<DATA>::HashNodePtr CHashMap<DATA>::findNode(const DATA& _data)
+template<typename DATA_T>
+typename CHashMap<DATA_T>::HashNodePtr CHashMap<DATA_T>::findNode(const DATA_T& _data)
 {
     size_t hashValue = BKDRHash(_data.c_str());
     size_t bucket = hashValue % HASHLEN;
@@ -45,8 +45,8 @@ typename CHashMap<DATA>::HashNodePtr CHashMap<DATA>::findNode(const DATA& _data)
     return node;
 }
 
-template<typename DATA>
-int CHashMap<DATA>::addNode(const DATA& _data)
+template<typename DATA_T>
+int CHashMap<DATA_T>::addNode(const DATA_T& _data)
 {
     HashNodePtr node = findNode(_data);
     if (!node)
@@ -66,8 +66,8 @@ int CHashMap<DATA>::addNode(const DATA& _data)
     return ++node->count;
 }
 
-template<typename DATA>
-int CHashMap<DATA>::delNode(const DATA& _data)
+template<typename DATA_T>
+int CHashMap<DATA_T>::delNode(const DATA_T& _data)
 {
     HashNodePtr node = findNode(_data);
     if (!node)  return -1;
@@ -80,8 +80,8 @@ int CHashMap<DATA>::delNode(const DATA& _data)
     return node->count;
 }
 
-template<typename DATA>
-int CHashMap<DATA>::removeNode(const DATA& _data)
+template<typename DATA_T>
+int CHashMap<DATA_T>::removeNode(const DATA_T& _data)
 {
     size_t hashValue = BKDRHash(_data.c_str());
     size_t bucket = hashValue % HASHLEN;

@@ -7,18 +7,18 @@ namespace LabSpace
 {
     namespace algorithm
     {
-        template<typename DATA>
+        template<typename DATA_T>
         struct HashNode
         {
-            DATA        data;
+            DATA_T        data;
             int         count;
-            HashNode<DATA>*   next;
+            HashNode<DATA_T>*   next;
         };
 
-        template<typename DATA>
+        template<typename DATA_T>
         class CHashMap
         {
-            typedef HashNode<DATA>  HashNode_t;
+            typedef HashNode<DATA_T>  HashNode_t;
             typedef HashNode_t*     HashNodePtr;
 
         public:
@@ -29,25 +29,25 @@ namespace LabSpace
              * @Function: add node 
              * @Return: the node count.
              **/
-            int addNode(const DATA& _data);
+            int addNode(const DATA_T& _data);
 
             /**
              * @Function: decrement node count when drop to 0 remove the node
              * @Return: the node count.
              *          -1  not exist
              **/
-            int delNode(const DATA& _data);
+            int delNode(const DATA_T& _data);
 
             /**
              * @Function: remove a node
              * @Return: 0  success
              *         -1  not exist
              **/
-            int removeNode(const DATA& _data);
+            int removeNode(const DATA_T& _data);
 
             int getNodesCount() { return m_nodesCount; }
 
-            HashNodePtr findNode(const DATA& _data);
+            HashNodePtr findNode(const DATA_T& _data);
 
         private:
             #define HASHLEN 2807303 

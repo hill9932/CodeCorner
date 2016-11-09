@@ -21,7 +21,7 @@ TEST(TEST_CASE_NAME, CreateHeap)
         srand(time(NULL));
         for (int i = 0; i < HeapSize; ++i)
         {
-            CMyHeap::NodeType node;
+            CMyHeap::HeapNode_t node;
             node.key = rand();
             if (node.key > maxKey)
                 maxKey = node.key;
@@ -33,7 +33,7 @@ TEST(TEST_CASE_NAME, CreateHeap)
         // myHeap.validate();
         myHeap.createMaxHeap();
 
-        CMyHeap::NodeType* nodes = myHeap.getNodes();
+        CMyHeap::HeapNodePtr nodes = myHeap.getNodes();
         for (int i = 0; i < HeapSize / 2 - 1; ++i)
         {
             ASSERT_TRUE(nodes[i].key >= nodes[2 * i + 1].key);
@@ -62,7 +62,7 @@ TEST(TEST_CASE_NAME, TopNHeap)
     int values[] = { 15993, 120, 29346, 100, 22443, 99, 97, 29346, 29347, 34, 12 };
     for (int i = 0; i < sizeof(values) / sizeof(values[0]); ++i)
     {
-        CMyTopHeap::NodeType node;
+        CMyTopHeap::HeapNode_t node;
         node.key = values[i];
         topH.checkNode(node);
     }
@@ -84,7 +84,7 @@ TEST(TEST_CASE_NAME, TopNHeap)
         srand(time(NULL));
         for (int i = 0; i < HeapSize; ++i)
         {
-            CMyHeap::NodeType node;
+            CMyHeap::HeapNode_t node;
             node.key = rand();
             myHeap.addNode(node);
             myTopNHeap.addNode(node);
@@ -99,8 +99,8 @@ TEST(TEST_CASE_NAME, TopNHeap)
 
         for (int i = 0; i < TopHeapSize; ++i)
         {
-            CMyHeap::NodeType* node1 = myTopHeap.getNode(i);
-            CMyHeap::NodeType* node2 = myHeap.getNode(HeapSize - TopHeapSize + i);
+            CMyHeap::HeapNodePtr node1 = myTopHeap.getNode(i);
+            CMyHeap::HeapNodePtr node2 = myHeap.getNode(HeapSize - TopHeapSize + i);
             ASSERT_EQ(node1->key, node2->key);
         }
 
@@ -111,12 +111,12 @@ TEST(TEST_CASE_NAME, TopNHeap)
         for (int i = 0; i < TopHeapSize; ++i)
         {
             int j = 0;
-            CMyHeap::NodeType* node = myTopNHeap.getNode(i);
+            CMyHeap::HeapNodePtr node = myTopNHeap.getNode(i);
  //           cerr << node->key << ", ";
 
             for (j = 0; j < TopHeapSize; ++j)
             {
-                CMyHeap::NodeType* checkNode = myHeap.getNode(j);
+                CMyHeap::HeapNodePtr checkNode = myHeap.getNode(j);
                 if (node->key == checkNode->key)
                     break;
             }
@@ -131,12 +131,12 @@ TEST(TEST_CASE_NAME, TopNHeap)
         for (int i = 0; i < TopHeapSize; ++i)
         {
             int j = 0;
-            CMyHeap::NodeType* node = myTopNHeap.getNode(i);
+            CMyHeap::HeapNodePtr node = myTopNHeap.getNode(i);
  //           cerr << node->key << ", ";
 
             for (j = 0; j < TopHeapSize; ++j)
             {
-                CMyHeap::NodeType* checkNode = myTopHeap.getNode(j);
+                CMyHeap::HeapNodePtr checkNode = myTopHeap.getNode(j);
                 if (node->key == checkNode->key)
                     break;
             }

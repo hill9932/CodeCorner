@@ -46,6 +46,9 @@ namespace LabSpace
         class CBSTree
         {
         public:
+            typedef BSTreeNode<T>   BSTreeNode_t;
+            typedef BSTreeNode_t*   BSTreeNodePtr;
+
             CBSTree();
             ~CBSTree();
 
@@ -69,7 +72,7 @@ namespace LabSpace
              **/
             int  removeValue(const T& _value);
 
-            BSTreeNode<T>* findNode(const T& _value);
+            BSTreeNodePtr findNode(const T& _value);
 
             void clear();
             bool validate();
@@ -77,12 +80,12 @@ namespace LabSpace
             int  getFreqCount() { return m_freqCount; }
 
         private:
-            void delNode(BSTreeNode<T>* _node);
-            void adjustHeight(BSTreeNode<T>* _node);
-            void midOrder(BSTreeNode<T>* _node, T* _buf, int& _n);
+            void delNode(BSTreeNodePtr _node);
+            void adjustHeight(BSTreeNodePtr _node);
+            void midOrder(BSTreeNodePtr _node, T* _buf, int& _n);
 
         private:
-            BSTreeNode<T>*      m_root;
+            BSTreeNodePtr       m_root;
             int                 m_nodesCount;
             int                 m_freqCount;
         };

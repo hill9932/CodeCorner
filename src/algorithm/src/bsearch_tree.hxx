@@ -14,13 +14,13 @@ CBSTree<T>::~CBSTree()
 }
 
 template<typename T>
-void CBSTree<T>::adjustHeight(BSTreeNode<T>* _node)
+void CBSTree<T>::adjustHeight(BSTreeNodePtr _node)
 {
     if (!_node) return;
 
     while (_node)
     {
-        BSTreeNode<T>* parent = _node->pNode;
+        BSTreeNodePtr parent = _node->pNode;
         if (parent)
         {
             int childHeight = parent->getChildsHeight();
@@ -43,15 +43,15 @@ int CBSTree<T>::addValue(const T& _value)
 {
     if (!m_root)
     {
-        m_root = new BSTreeNode<T>;
+        m_root = new BSTreeNode_t;
         m_root->data = _value;
         ++m_nodesCount;
         ++m_freqCount;
         return 1;
     }
 
-    BSTreeNode<T>* searchNode = m_root;
-    BSTreeNode<T>* parentNode = NULL;
+    BSTreeNodePtr searchNode = m_root;
+    BSTreeNodePtr parentNode = NULL;
     int level = 0;
     int child = 0; // 0 is left child, 1 is right child
 
@@ -82,7 +82,7 @@ int CBSTree<T>::addValue(const T& _value)
     {
         ++m_nodesCount;
         ++m_freqCount;
-        BSTreeNode<T>* newNode = new BSTreeNode<T>;     
+        BSTreeNodePtr newNode = new BSTreeNode_t;
         newNode->data  = _value;
         newNode->level = level;
         newNode->pNode = parentNode;
@@ -100,7 +100,7 @@ int CBSTree<T>::addValue(const T& _value)
 }
 
 template<typename T>
-void CBSTree<T>::delNode(BSTreeNode<T>* _node)
+void CBSTree<T>::delNode(BSTreeNodePtr _node)
 {
     if (!_node) return;
     delNode(_node->lNode);
@@ -116,9 +116,9 @@ void CBSTree<T>::clear()
 }
 
 template<typename T>
-BSTreeNode<T>* CBSTree<T>::findNode(const T& _value)
+typename CBSTree<T>::BSTreeNodePtr CBSTree<T>::findNode(const T& _value)
 {
-    BSTreeNode<T>* searchNode = m_root;
+    BSTreeNodePtr searchNode = m_root;
     while (searchNode)
     {
         if (_value < searchNode->data)
@@ -135,15 +135,15 @@ BSTreeNode<T>* CBSTree<T>::findNode(const T& _value)
 template<typename T>
 int CBSTree<T>::removeValue(const T& _value)
 {
-    BSTreeNode<T>* node = findNode(_value);
+    BSTreeNodePtr node = findNode(_value);
     if (!node)  return -1;
 
-    BSTreeNode<T>* nextNode     = NULL;
-    BSTreeNode<T>* parentNode   = node->pNode;
+    BSTreeNodePtr nextNode = NULL;
+    BSTreeNodePtr parentNode = node->pNode;
 
     if (node->lNode)    // 1. has left child
     {
-        BSTreeNode<T>* p = node->lNode;
+        BSTreeNodePtr p = node->lNode;
         while (p->rNode)
             p = p->rNode;   // get the most right child as the placement node
         nextNode = p;
@@ -197,7 +197,7 @@ int CBSTree<T>::removeValue(const T& _value)
 template<typename T>
 int CBSTree<T>::delValue(const T& _value)
 {
-    BSTreeNode<T>* node = findNode(_value);
+    BSTreeNodePtr node = findNode(_value);
     if (!node)  return -1;
 
     int freq = --node->freq;
@@ -210,7 +210,7 @@ int CBSTree<T>::delValue(const T& _value)
 }
 
 template<typename T>
-void CBSTree<T>::midOrder(BSTreeNode<T>* _node, T* _buf, int& _n)
+void CBSTree<T>::midOrder(BSTreeNodePtr _node, T* _buf, int& _n)
 {
     if (!_node || !_buf)    return;
     if (_node->lNode)   midOrder(_node->lNode, _buf, _n);

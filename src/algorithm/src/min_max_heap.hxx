@@ -1,12 +1,12 @@
-template<typename KEY, typename DATA, int SIZE>
-CHeap<KEY, DATA, SIZE>::CHeap()
+template<typename KEY_T, typename DATA_T, int SIZE>
+CHeap<KEY_T, DATA_T, SIZE>::CHeap()
 {
-    m_nodes.reset(new NodeType[SIZE]);
+    m_nodes.reset(new HeapNode_t[SIZE]);
     m_nodesCount = 0;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-CHeap<KEY, DATA, SIZE>::~CHeap()
+template<typename KEY_T, typename DATA_T, int SIZE>
+CHeap<KEY_T, DATA_T, SIZE>::~CHeap()
 {
 
 }
@@ -23,21 +23,21 @@ bool IsSmaller(const T& _l, const T& _r)
     return _l < _r;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-void CHeap<KEY, DATA, SIZE>::exchangeNodes(int _l, int _r)
+template<typename KEY_T, typename DATA_T, int SIZE>
+void CHeap<KEY_T, DATA_T, SIZE>::exchangeNodes(int _l, int _r)
 {
     if (_l == _r)   return;
 
-    KEY  lKey  = m_nodes[_l].key;
-    DATA lData = m_nodes[_l].data;
+    KEY_T  lKey  = m_nodes[_l].key;
+    DATA_T lData = m_nodes[_l].data;
     m_nodes[_l].key  = m_nodes[_r].key;
     m_nodes[_l].data = m_nodes[_r].data;
     m_nodes[_r].key  = lKey;
     m_nodes[_r].data = lData;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-int CHeap<KEY, DATA, SIZE>::partition(int _left, int _right, CompFunc _func)
+template<typename KEY_T, typename DATA_T, int SIZE>
+int CHeap<KEY_T, DATA_T, SIZE>::partition(int _left, int _right, CompFunc _func)
 {
     if (_left  < 0 ||
         _right < 0 ||
@@ -45,7 +45,7 @@ int CHeap<KEY, DATA, SIZE>::partition(int _left, int _right, CompFunc _func)
         _right >= m_nodesCount)
         return -1;
 
-    KEY pivot = m_nodes[_right].key;
+    KEY_T pivot = m_nodes[_right].key;
     int pos = _left - 1;
     for (int i = _left; i < _right; ++i)
     {
@@ -56,14 +56,14 @@ int CHeap<KEY, DATA, SIZE>::partition(int _left, int _right, CompFunc _func)
     return pos;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-int CHeap<KEY, DATA, SIZE>::choosePivotByRandom(int _left, int _right, int _k)
+template<typename KEY_T, typename DATA_T, int SIZE>
+int CHeap<KEY_T, DATA_T, SIZE>::choosePivotByRandom(int _left, int _right, int _k)
 {
     return LabSpace::Common::Util::Random(_left, _right);
 }
 
-template<typename KEY, typename DATA, int SIZE>
-int CHeap<KEY, DATA, SIZE>::choosePivotByMedian(int _left, int _right, int _k)
+template<typename KEY_T, typename DATA_T, int SIZE>
+int CHeap<KEY_T, DATA_T, SIZE>::choosePivotByMedian(int _left, int _right, int _k)
 {
     if (_k - 1 > _right || _k - 1 < _left)
         return -1;
@@ -81,18 +81,18 @@ int CHeap<KEY, DATA, SIZE>::choosePivotByMedian(int _left, int _right, int _k)
     return _left;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-int CHeap<KEY, DATA, SIZE>::choosePivotByDirect(int _left, int _right, int _k)
+template<typename KEY_T, typename DATA_T, int SIZE>
+int CHeap<KEY_T, DATA_T, SIZE>::choosePivotByDirect(int _left, int _right, int _k)
 {
     return _right;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-bool CHeap<KEY, DATA, SIZE>::selectMaxN(int _left, int _right, int _k)
+template<typename KEY_T, typename DATA_T, int SIZE>
+bool CHeap<KEY_T, DATA_T, SIZE>::selectMaxN(int _left, int _right, int _k)
 {
     int index = choosePivotByRandom(_left, _right, _k);
     exchangeNodes(index, _right);
-    int pos = partition(_left, _right, IsBigger<KEY>);
+    int pos = partition(_left, _right, IsBigger<KEY_T>);
     if (pos == _k - 1)
         return true;
     else if (pos > _k - 1)
@@ -101,18 +101,18 @@ bool CHeap<KEY, DATA, SIZE>::selectMaxN(int _left, int _right, int _k)
         return selectMaxN(pos + 1, _right, _k);
 }
 
-template<typename KEY, typename DATA, int SIZE>
-bool CHeap<KEY, DATA, SIZE>::selectMaxN(int _k)
+template<typename KEY_T, typename DATA_T, int SIZE>
+bool CHeap<KEY_T, DATA_T, SIZE>::selectMaxN(int _k)
 {
     return selectMaxN(0, m_nodesCount - 1, _k);
 }
 
-template<typename KEY, typename DATA, int SIZE>
-bool CHeap<KEY, DATA, SIZE>::selectMinN(int _left, int _right, int _k)
+template<typename KEY_T, typename DATA_T, int SIZE>
+bool CHeap<KEY_T, DATA_T, SIZE>::selectMinN(int _left, int _right, int _k)
 {
     int index = choosePivotByMedian(_left, _right, _k);
     exchangeNodes(index, _right);
-    int pos = partition(_left, _right, IsSmaller<KEY>);
+    int pos = partition(_left, _right, IsSmaller<KEY_T>);
     if (pos == _k - 1)
         return true;
     else if (pos > _k - 1)
@@ -121,14 +121,14 @@ bool CHeap<KEY, DATA, SIZE>::selectMinN(int _left, int _right, int _k)
         return selectMinN(pos + 1, _right, _k);
 }
 
-template<typename KEY, typename DATA, int SIZE>
-bool CHeap<KEY, DATA, SIZE>::selectMinN(int _k)
+template<typename KEY_T, typename DATA_T, int SIZE>
+bool CHeap<KEY_T, DATA_T, SIZE>::selectMinN(int _k)
 {
     return selectMinN(0, m_nodesCount - 1, _k);
 }
 
-template<typename KEY, typename DATA, int SIZE>
-void CHeap<KEY, DATA, SIZE>::maxOrMinHeap(int _index, CompFunc _func)
+template<typename KEY_T, typename DATA_T, int SIZE>
+void CHeap<KEY_T, DATA_T, SIZE>::maxOrMinHeap(int _index, CompFunc _func)
 {
     const int MaxIndex = m_nodesCount - 1;
     int left, right, largest;
@@ -148,22 +148,22 @@ void CHeap<KEY, DATA, SIZE>::maxOrMinHeap(int _index, CompFunc _func)
     }
 }
 
-template<typename KEY, typename DATA, int SIZE>
-void CHeap<KEY, DATA, SIZE>::createMaxHeap()
+template<typename KEY_T, typename DATA_T, int SIZE>
+void CHeap<KEY_T, DATA_T, SIZE>::createMaxHeap()
 {
     for (int i = m_nodesCount / 2 - 1; i >= 0; --i)     // from down to top 
-        maxOrMinHeap(i, IsBigger<KEY>);
+        maxOrMinHeap(i, IsBigger<KEY_T>);
 }
 
-template<typename KEY, typename DATA, int SIZE>
-void CHeap<KEY, DATA, SIZE>::createMinHeap()
+template<typename KEY_T, typename DATA_T, int SIZE>
+void CHeap<KEY_T, DATA_T, SIZE>::createMinHeap()
 {
     for (int i = m_nodesCount / 2 - 1; i >= 0; --i)
-        maxOrMinHeap(i, IsSmaller<KEY>);
+        maxOrMinHeap(i, IsSmaller<KEY_T>);
 }
 
-template<typename KEY, typename DATA, int SIZE>
-int CHeap<KEY, DATA, SIZE>::addNode(const NodeType* _node)
+template<typename KEY_T, typename DATA_T, int SIZE>
+int CHeap<KEY_T, DATA_T, SIZE>::addNode(const HeapNode_t* _node)
 {
     if (!_node || m_nodesCount == SIZE)  return -1;
 
@@ -173,14 +173,14 @@ int CHeap<KEY, DATA, SIZE>::addNode(const NodeType* _node)
     return 0;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-int CHeap<KEY, DATA, SIZE>::addNode(const NodeType& _node)
+template<typename KEY_T, typename DATA_T, int SIZE>
+int CHeap<KEY_T, DATA_T, SIZE>::addNode(const HeapNode_t& _node)
 {
     return addNode(&_node);
 }
 
-template<typename KEY, typename DATA, int SIZE>
-void CHeap<KEY, DATA, SIZE>::sortHeap()
+template<typename KEY_T, typename DATA_T, int SIZE>
+void CHeap<KEY_T, DATA_T, SIZE>::sortHeap()
 {
     int keepCount = m_nodesCount;
 
@@ -190,13 +190,13 @@ void CHeap<KEY, DATA, SIZE>::sortHeap()
     {
         exchangeNodes(i, 0);
         --m_nodesCount;     // the biggest is in the last position, so skip it
-        maxOrMinHeap(0, IsBigger<KEY>);
+        maxOrMinHeap(0, IsBigger<KEY_T>);
     }
     m_nodesCount = keepCount;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-bool CHeap<KEY, DATA, SIZE>::validate()
+template<typename KEY_T, typename DATA_T, int SIZE>
+bool CHeap<KEY_T, DATA_T, SIZE>::validate()
 {
     cerr << endl;
     for (int i = 0; i < m_nodesCount; ++i)
@@ -208,8 +208,8 @@ bool CHeap<KEY, DATA, SIZE>::validate()
     return true;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-bool CTopNHeap<KEY, DATA, SIZE>::validate()
+template<typename KEY_T, typename DATA_T, int SIZE>
+bool CTopNHeap<KEY_T, DATA_T, SIZE>::validate()
 {
     CHeap::validate();
 
@@ -224,8 +224,8 @@ bool CTopNHeap<KEY, DATA, SIZE>::validate()
     return true;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-bool CTopNHeap<KEY, DATA, SIZE>::checkNode(const NodeType* _node)
+template<typename KEY_T, typename DATA_T, int SIZE>
+bool CTopNHeap<KEY_T, DATA_T, SIZE>::checkNode(const HeapNode_t* _node)
 {
     if (!_node) return false;
 
@@ -241,7 +241,7 @@ bool CTopNHeap<KEY, DATA, SIZE>::checkNode(const NodeType* _node)
     {
         m_nodes[0].key  = _node->key;
         m_nodes[0].data = _node->data;
-        maxOrMinHeap(0, IsSmaller<KEY>);    // since replace the [0] node, so only adjust the [0] node
+        maxOrMinHeap(0, IsSmaller<KEY_T>);    // since replace the [0] node, so only adjust the [0] node
 
         r = true;
     }
@@ -249,8 +249,8 @@ bool CTopNHeap<KEY, DATA, SIZE>::checkNode(const NodeType* _node)
     return r;
 }
 
-template<typename KEY, typename DATA, int SIZE>
-bool CTopNHeap<KEY, DATA, SIZE>::checkNode(const NodeType& _node)
+template<typename KEY_T, typename DATA_T, int SIZE>
+bool CTopNHeap<KEY_T, DATA_T, SIZE>::checkNode(const HeapNode_t& _node)
 {
     return checkNode(&_node);
 }
