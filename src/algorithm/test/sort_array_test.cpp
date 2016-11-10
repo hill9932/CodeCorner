@@ -15,18 +15,13 @@ TEST(TEST_CASE_NAME, CreateSortArray)
     for (auto e: values)
         sortArray.addValue(e);
 
-    sortArray.validate();
     sortArray.cycle(3);
     sortArray.cycle(1);
     sortArray.cycle(0);
-    sortArray.validate();
 
     sortArray.cycle(-1);
-    sortArray.validate();
     sortArray.cycle(-2);
-    sortArray.validate();
     sortArray.cycle(-1);
-    sortArray.validate();
 
     for (int i = 0; i < (sizeof(values) / sizeof(values[0])) - 1; ++i)
         ASSERT_EQ(sortArray[i], values[i]);

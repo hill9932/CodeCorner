@@ -7,21 +7,17 @@ namespace LabSpace
 {
     namespace algorithm
     {
-        template<typename T>
+        template<typename KEY_T, typename DATA_T>
         struct BSTreeNode
         {
-            enum BFStatus
-            {
-                STATUS_RH,     // right tree is higher
-                STATUS_EH,     // the same height
-                STATUS_LH      // left tree is higher
-            };
+            enum NodeColor { RED, BLACK };
 
             BSTreeNode()
             {
+                color   = RED;
                 level   = 0;
                 freq    = 1;
-                lNode   = rNode = pNode = NULL;
+                left   = right = parent = NULL;
                 lHeight = 0;
                 rHeight = 0;
             }
@@ -31,23 +27,26 @@ namespace LabSpace
                 return max(lHeight, rHeight);
             }
 
-            T               data;
+            KEY_T           key;
+            DATA_T          data;
+            NodeColor       color;
+
             int             freq;   // how many times added
             int             level;  // the distance to root
             int             lHeight;
             int             rHeight;
-            BSTreeNode*     lNode;
-            BSTreeNode*     rNode;
-            BSTreeNode*     pNode;
+            BSTreeNode*     left;
+            BSTreeNode*     right;
+            BSTreeNode*     parent;
         };
 
 
-        template<class T>
+        template<typename KEY_T, typename DATA_T>
         class CBSTree
         {
         public:
-            typedef BSTreeNode<T>   BSTreeNode_t;
-            typedef BSTreeNode_t*   BSTreeNodePtr;
+            typedef BSTreeNode<KEY_T, DATA_T>   TreeNode_t;
+            typedef TreeNode_t*                 TreeNodePtr;
 
             CBSTree();
             ~CBSTree();
@@ -56,38 +55,42 @@ namespace LabSpace
              * @Function: add value to tree
              * @Return: the freq of this value
              **/
-            int  addValue(const T& _value);
+            int  addValue(const KEY_T& _value);
 
             /**
              * @Function: decrement one of the freq
              * @Return: -1  no value found
              *          >0  current freq
              **/
-            int  delValue(const T& _value);
+            int  delValue(const KEY_T& _value);
 
             /**
              * @Function: remove the value node
              * @Return: -1  no value found
              *          >0  current freq
              **/
-            int  removeValue(const T& _value);
+            int  removeValue(const KEY_T& _value);
 
-            BSTreeNodePtr findNode(const T& _value);
+            TreeNodePtr findNode(const KEY_T& _value);
 
             void clear();
             bool validate();
             int  getNodeCount() { return m_nodesCount; }
             int  getFreqCount() { return m_freqCount; }
 
-        private:
-            void delNode(BSTreeNodePtr _node);
-            void adjustHeight(BSTreeNodePtr _node);
-            void midOrder(BSTreeNodePtr _node, T* _buf, int& _n);
+        protected:
+            void delNode(TreeNodePtr _node);
+            void midOrder(TreeNodePtr _node, KEY_T* _buf, int& _n);
+            TreeNodePtr grandparent(TreeNodePtr _node);
+            TreeNodePtr uncle(TreeNodePtr _node);
+            TreeNodePtr sibling(TreeNodePtr _node);
 
-        private:
-            BSTreeNodePtr       m_root;
-            int                 m_nodesCount;
-            int                 m_freqCount;
+            virtual void adjust(TreeNodePtr _node);
+
+        protected:
+            TreeNodePtr     m_root;
+            int             m_nodesCount;
+            int             m_freqCount;
         };
 
         #include "bsearch_tree.hxx"

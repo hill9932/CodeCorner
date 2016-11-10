@@ -11,6 +11,8 @@ include_directories("${PROJECT_ROOT_PATH}/src/algorithm/src")
 #
 set(SOURCES 	src/trie_tree.cpp)
 set(HEADERS 	src/trie_tree.h
+				src/rb_tree.h
+				src/rb_tree.hxx
 				src/bsearch_tree.h
 				src/bsearch_tree.hxx
 				src/min_max_heap.h
@@ -36,6 +38,7 @@ project(${PROJECT_TEST_NAME})
 
 set(TEST_SOURCES	test/main.cpp
 					test/trie_tree_test.cpp
+					test/rb_tree_test.cpp
 					test/bsearch_tree_test.cpp
 					test/heap_test.cpp
 					test/hash_map_test.cpp

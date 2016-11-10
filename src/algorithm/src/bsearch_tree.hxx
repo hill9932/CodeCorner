@@ -1,31 +1,31 @@
 
-template<typename T>
-CBSTree<T>::CBSTree()
+template<typename KEY_T, typename DATA_T>
+CBSTree<KEY_T, DATA_T>::CBSTree()
 {
     m_root = NULL;
     m_nodesCount = 0;
     m_freqCount = 0;
 }
 
-template<typename T>
-CBSTree<T>::~CBSTree()
+template<typename KEY_T, typename DATA_T>
+CBSTree<KEY_T, DATA_T>::~CBSTree()
 {
     clear();
 }
 
-template<typename T>
-void CBSTree<T>::adjustHeight(BSTreeNodePtr _node)
+template<typename KEY_T, typename DATA_T>
+void CBSTree<KEY_T, DATA_T>::adjust(TreeNodePtr _node)
 {
     if (!_node) return;
 
     while (_node)
     {
-        BSTreeNodePtr parent = _node->pNode;
+        TreeNodePtr parent = _node->parent;
         if (parent)
         {
             int childHeight = parent->getChildsHeight();
 
-            if (parent->lNode == _node)
+            if (parent->left == _node)
                 parent->lHeight++;
             else
                 parent->rHeight++;
@@ -38,20 +38,24 @@ void CBSTree<T>::adjustHeight(BSTreeNodePtr _node)
     }
 }
 
-template<typename T>
-int CBSTree<T>::addValue(const T& _value)
+template<typename KEY_T, typename DATA_T>
+int CBSTree<KEY_T, DATA_T>::addValue(const KEY_T& _value)
 {
     if (!m_root)
     {
-        m_root = new BSTreeNode_t;
-        m_root->data = _value;
+        TreeNodePtr newNode = new TreeNode_t;
+        newNode->key = _value;
         ++m_nodesCount;
         ++m_freqCount;
+
+        adjust(newNode);
+        m_root = newNode;
+
         return 1;
     }
 
-    BSTreeNodePtr searchNode = m_root;
-    BSTreeNodePtr parentNode = NULL;
+    TreeNodePtr searchNode = m_root;
+    TreeNodePtr parentNode = NULL;
     int level = 0;
     int child = 0; // 0 is left child, 1 is right child
 
@@ -60,14 +64,14 @@ int CBSTree<T>::addValue(const T& _value)
         ++level;
         parentNode = searchNode;
 
-        if (_value < searchNode->data)
+        if (_value < searchNode->key)
         {
-            searchNode = searchNode->lNode;
+            searchNode = searchNode->left;
             child = 0;
         }
-        else if (_value > searchNode->data)
+        else if (_value > searchNode->key)
         {
-            searchNode = searchNode->rNode;
+            searchNode = searchNode->right;
             child = 1;
         }
         else break;
@@ -82,49 +86,85 @@ int CBSTree<T>::addValue(const T& _value)
     {
         ++m_nodesCount;
         ++m_freqCount;
-        BSTreeNodePtr newNode = new BSTreeNode_t;
-        newNode->data  = _value;
+        TreeNodePtr newNode = new TreeNode_t;
+        newNode->key  = _value;
         newNode->level = level;
-        newNode->pNode = parentNode;
+        newNode->parent = parentNode;
 
         if (child == 0)
-            parentNode->lNode = newNode;
+            parentNode->left = newNode;
         else
-            parentNode->rNode = newNode;
+            parentNode->right = newNode;
 
-        adjustHeight(newNode);
+        adjust(newNode);
         return 1;
     }
 
     return searchNode->freq;
 }
 
-template<typename T>
-void CBSTree<T>::delNode(BSTreeNodePtr _node)
+template<typename KEY_T, typename DATA_T>
+void CBSTree<KEY_T, DATA_T>::delNode(TreeNodePtr _node)
 {
     if (!_node) return;
-    delNode(_node->lNode);
-    delNode(_node->rNode);
+    delNode(_node->left);
+    delNode(_node->right);
     delete _node;
 }
 
 
-template<typename T>
-void CBSTree<T>::clear()
+template<typename KEY_T, typename DATA_T>
+void CBSTree<KEY_T, DATA_T>::clear()
 {
     delNode(m_root);
 }
 
-template<typename T>
-typename CBSTree<T>::BSTreeNodePtr CBSTree<T>::findNode(const T& _value)
+template<typename KEY_T, typename DATA_T>
+typename CBSTree<KEY_T, DATA_T>::TreeNodePtr
+CBSTree<KEY_T, DATA_T>::grandparent(TreeNodePtr _node)
 {
-    BSTreeNodePtr searchNode = m_root;
+    if (!_node || !_node->parent) return NULL;
+    return _node->parent->parent;
+}
+
+template<typename KEY_T, typename DATA_T>
+typename CBSTree<KEY_T, DATA_T>::TreeNodePtr
+CBSTree<KEY_T, DATA_T>::uncle(TreeNodePtr _node)
+{
+    if (!_node) return NULL;
+
+    TreeNodePtr gp = grandparent(_node);
+    if (!gp)    return NULL;
+
+    if (gp->parent == gp->left)
+        return gp->right;
+    else
+        return gp->left;
+}
+
+template<typename KEY_T, typename DATA_T>
+typename CBSTree<KEY_T, DATA_T>::TreeNodePtr
+CBSTree<KEY_T, DATA_T>::sibling(TreeNodePtr _node)
+{
+    if (!_node || !_node->parent)   return NULL;
+
+    if (_node == _node->parent->left)
+        return _node->parent->right;
+    else
+        return _node->parent->left;
+}
+
+template<typename KEY_T, typename DATA_T>
+typename CBSTree<KEY_T, DATA_T>::TreeNodePtr 
+CBSTree<KEY_T, DATA_T>::findNode(const KEY_T& _value)
+{
+    TreeNodePtr searchNode = m_root;
     while (searchNode)
     {
-        if (_value < searchNode->data)
-            searchNode = searchNode->lNode;
-        else if (_value > searchNode->data)
-            searchNode = searchNode->rNode;
+        if (_value < searchNode->key)
+            searchNode = searchNode->left;
+        else if (_value > searchNode->key)
+            searchNode = searchNode->right;
         else
             return searchNode;
     }
@@ -132,58 +172,58 @@ typename CBSTree<T>::BSTreeNodePtr CBSTree<T>::findNode(const T& _value)
     return NULL;
 }
 
-template<typename T>
-int CBSTree<T>::removeValue(const T& _value)
+template<typename KEY_T, typename DATA_T>
+int CBSTree<KEY_T, DATA_T>::removeValue(const KEY_T& _value)
 {
-    BSTreeNodePtr node = findNode(_value);
+    TreeNodePtr node = findNode(_value);
     if (!node)  return -1;
 
-    BSTreeNodePtr nextNode = NULL;
-    BSTreeNodePtr parentNode = node->pNode;
+    TreeNodePtr nextNode = NULL;
+    TreeNodePtr parentNode = node->parent;
 
-    if (node->lNode)    // 1. has left child
+    if (node->left)    // 1. has left child
     {
-        BSTreeNodePtr p = node->lNode;
-        while (p->rNode)
-            p = p->rNode;   // get the most right child as the placement node
+        TreeNodePtr p = node->left;
+        while (p->right)
+            p = p->right;   // get the most right child as the placement node
         nextNode = p;
 
-        if (nextNode->lNode)
-            p = nextNode->lNode;
-        while (p && p->lNode)   p = p->lNode;
+        if (nextNode->left)
+            p = nextNode->left;
+        while (p && p->left)   p = p->left;
 
         if (p)      // the most left child point to the the left child of the removed node
         {
-            p->lNode = node->lNode;         
-            node->lNode->pNode = p;
+            p->left = node->left;         
+            node->left->parent = p;
         }
 
-        nextNode->rNode = node->rNode;  // directly point to the right child of the removed node
-        if (node->rNode)    node->rNode->pNode = nextNode;
+        nextNode->right = node->right;  // directly point to the right child of the removed node
+        if (node->right)    node->right->parent = nextNode;
 
-        if (nextNode->pNode->rNode == nextNode)
-            nextNode->pNode->rNode = NULL;
+        if (nextNode->parent->right == nextNode)
+            nextNode->parent->right = NULL;
         else
-            nextNode->pNode->lNode = NULL;
+            nextNode->parent->left = NULL;
     }
     else
     {
-        nextNode = node->rNode;
+        nextNode = node->right;
     }
 
     if (parentNode)
     {
-        if (parentNode->lNode == node)
-            parentNode->lNode = nextNode;
+        if (parentNode->left == node)
+            parentNode->left = nextNode;
         else
-            parentNode->rNode = nextNode;
+            parentNode->right = nextNode;
 
-        if (nextNode)   nextNode->pNode = parentNode;
+        if (nextNode)   nextNode->parent = parentNode;
     }
     else
     {
         m_root = nextNode;
-        if (nextNode)   nextNode->pNode = NULL;
+        if (nextNode)   nextNode->parent = NULL;
     }
 
     int freq = node->freq;
@@ -194,10 +234,10 @@ int CBSTree<T>::removeValue(const T& _value)
     return freq;
 }
 
-template<typename T>
-int CBSTree<T>::delValue(const T& _value)
+template<typename KEY_T, typename DATA_T>
+int CBSTree<KEY_T, DATA_T>::delValue(const KEY_T& _value)
 {
-    BSTreeNodePtr node = findNode(_value);
+    TreeNodePtr node = findNode(_value);
     if (!node)  return -1;
 
     int freq = --node->freq;
@@ -209,23 +249,23 @@ int CBSTree<T>::delValue(const T& _value)
     return  freq;
 }
 
-template<typename T>
-void CBSTree<T>::midOrder(BSTreeNodePtr _node, T* _buf, int& _n)
+template<typename KEY_T, typename DATA_T>
+void CBSTree<KEY_T, DATA_T>::midOrder(TreeNodePtr _node, KEY_T* _buf, int& _n)
 {
     if (!_node || !_buf)    return;
-    if (_node->lNode)   midOrder(_node->lNode, _buf, _n);
-    _buf[_n] = _node->data;
+    if (_node->left)   midOrder(_node->left, _buf, _n);
+    _buf[_n] = _node->key;
     ++_n;
-    if (_node->rNode)   midOrder(_node->rNode, _buf, _n);
+    if (_node->right)   midOrder(_node->right, _buf, _n);
 }
 
-template<typename T>
-bool CBSTree<T>::validate()
+template<typename KEY_T, typename DATA_T>
+bool CBSTree<KEY_T, DATA_T>::validate()
 {
     //shared_ptr<T> sortArray(new T[m_nodeCount], default_delete<T[]>());
-    std::unique_ptr<T[]> sortArray(new T[m_nodesCount]);
+    std::unique_ptr<KEY_T[]> sortArray(new KEY_T[m_nodesCount]);
 
-    T* sortArrayPtr = sortArray.get();
+    KEY_T* sortArrayPtr = sortArray.get();
     int n = 0;
     midOrder(m_root, sortArrayPtr, n);
 

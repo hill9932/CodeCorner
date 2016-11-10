@@ -121,7 +121,6 @@ void CSortArray<KEY_T, SIZE>::sort()
         }
 
         nodes[j].key = m_nodes[i].key;
-        validate(nodes.get());
     }
     m_nodes = std::move(nodes);
 }
