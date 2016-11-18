@@ -47,7 +47,7 @@ namespace LabSpace
         std::condition_variable             LogStream::s_listCV;
         std::list<BufferPtr>                LogStream::s_bufferList;
         std::list<BufferPtr>                LogStream::s_savingList;
-        std::atomic_int32_t                 LogStream::s_buferCount;
+        std::atomic<int32>                  LogStream::s_buferCount;
 
         /************************************************************************/
         /* Class LogStream                                                      */
@@ -282,7 +282,7 @@ namespace LabSpace
         CLogger::Impl::Impl(LogLevel _level, int _savedErrno, const SourceFile& _file, int _line)
         {
             struct timeval now;
-            gettimeofday(&now);
+            gettimeofday(&now, NULL);
 
             m_logStream << "Entry {\"" << CCurrentThread::ID() << ", " << TimeUtil::GetTimeString(&now) << ", ";
             

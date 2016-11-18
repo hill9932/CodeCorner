@@ -4,6 +4,8 @@
 
 using namespace LabSpace::algorithm;
 
+log4cplus::Logger*  g_logger;
+
 int main(int _argc, char* _argv[])
 {
 #ifdef WIN32

@@ -14,6 +14,7 @@
 
 #include <list>
 #include <memory>
+#include <atomic>
 
 using namespace LabSpace::Common;
 
@@ -240,7 +241,7 @@ namespace LabSpace
             static  std::condition_variable s_listCV;
             static  std::list<BufferPtr>    s_bufferList;   // buffer pool for all the streams
             static  std::list<BufferPtr>    s_savingList;   // finished buffers by all the streams
-            static  std::atomic_int32_t     s_buferCount;
+            static  std::atomic<int32>      s_buferCount;
             BufferPtr                       m_curBuffer;
         };
 

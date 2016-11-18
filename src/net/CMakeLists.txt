@@ -31,6 +31,6 @@ set(NET_TEST_SRC	test/main.cpp
 
 add_executable(net_test ${NET_TEST_SRC})
 add_dependencies(net_test net)
-target_link_libraries(net_test net gtest popt log4cplus.lib)
+target_link_libraries(net_test net gtest popt log4cplus)
 
 set_target_properties (net_test PROPERTIES FOLDER test)

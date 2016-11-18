@@ -61,8 +61,8 @@ void CRBTree<KEY_T, DATA_T>::adjust(TreeNodePtr _node)
         //
         // case 1: uncle is red
         //
-        TreeNodePtr uncleNode   = uncle(_node);
-        TreeNodePtr grandNode   = grandparent(_node);
+        TreeNodePtr uncleNode   = this->uncle(_node);
+        TreeNodePtr grandNode   = this->grandparent(_node);
         TreeNodePtr parentNode  = _node->parent;
 
         if (uncleNode && 
@@ -104,13 +104,13 @@ void CRBTree<KEY_T, DATA_T>::adjust(TreeNodePtr _node)
             parentNode->color   = TreeNode_t::NodeColor::BLACK;
             grandNode->color    = TreeNode_t::NodeColor::RED;
             if (_node == _node->parent->left && 
-                _node->parent == grandparent(_node)->left)
+                _node->parent == this->grandparent(_node)->left)
             {
-                rotateRight(grandparent(_node));
+                rotateRight(this->grandparent(_node));
             }
             else 
             {
-                rotateLeft(grandparent(_node));
+                rotateLeft(this->grandparent(_node));
             }
         }
     }

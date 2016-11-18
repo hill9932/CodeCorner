@@ -35,7 +35,7 @@ namespace LabSpace
 
             int length() const { return static_cast<int>(m_cur - m_data); }
             int avail()  const { return static_cast<int>(end() - m_cur - 1);  }
-            int size()   const { return N; }
+            int size()   const { return SIZE; }
 
             void add(size_t len) { m_cur += len; }
             void reset() { m_cur = m_data; /*bzero(m_data, sizeof m_data); */}

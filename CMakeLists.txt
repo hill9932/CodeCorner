@@ -5,18 +5,26 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(PROJECT_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(3DPARTY_LIB_DIR "")		# record where to find the 3rdParty libraries
+set(SYSTEM_LIBS "")
+set(COMPILE_OPTIONS "")
+
 
 #
 # project settings
 #
 project(CodeCorner)
 
-if (UNIX)
-    add_definitions(-DLINUX)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-	set(3DPARTY_LIB_DIR "linux")
+if (DEBUG)
+	add_definitions(-DDEBUG)
 	
-elseif (MSVC)
+	if (MSVC)
+	
+	else()
+		set(COMPILE_OPTIONS "-ggdb -O0")
+	endif()
+endif()
+
+if (MSVC)
 	#
 	# define preprocessors
 	#
@@ -24,10 +32,16 @@ elseif (MSVC)
 
     add_definitions(-DWIN32)
 	add_definitions(-DWIN32_LEAN_AND_MEAN)
-
+	add_definitions(-DHILUO)
 	if (MSVC12)
 		set(3DPARTY_LIB_DIR "vs2013/"${CMAKE_BUILD_TYPE})
 	endif()
+	
+else()
+    add_definitions(-DLINUX)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILE_OPTIONS} -std=c++11")
+	set(3DPARTY_LIB_DIR "linux")
+	set(SYSTEM_LIBS dl pthread)
 endif()
 
 set(EXECUTABLE_OUTPUT_PATH "${PROJECT_ROOT_PATH}/bin")

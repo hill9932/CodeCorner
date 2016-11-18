@@ -211,7 +211,7 @@ bool CHeap<KEY_T, DATA_T, SIZE>::validate()
 template<typename KEY_T, typename DATA_T, int SIZE>
 bool CTopNHeap<KEY_T, DATA_T, SIZE>::validate()
 {
-    CHeap::validate();
+    CHeap<CHeap<KEY_T, DATA_T, SIZE>::validate();
 
     for (int i = 0; i < m_nodesCount; ++i)
     {
@@ -232,8 +232,8 @@ bool CTopNHeap<KEY_T, DATA_T, SIZE>::checkNode(const HeapNode_t* _node)
     bool r = false;
     if (m_nodesCount != SIZE)
     {
-        addNode(_node);
-        createMinHeap();
+        this->addNode(_node);
+        this->createMinHeap();
 
         r = true;
     }
@@ -241,7 +241,7 @@ bool CTopNHeap<KEY_T, DATA_T, SIZE>::checkNode(const HeapNode_t* _node)
     {
         m_nodes[0].key  = _node->key;
         m_nodes[0].data = _node->data;
-        maxOrMinHeap(0, IsSmaller<KEY_T>);    // since replace the [0] node, so only adjust the [0] node
+        this->maxOrMinHeap(0, IsSmaller<KEY_T>);    // since replace the [0] node, so only adjust the [0] node
 
         r = true;
     }

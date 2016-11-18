@@ -14,12 +14,13 @@ namespace LabSpace
             CRBTree();
             ~CRBTree();
 
+            using CBSTree<KEY_T, DATA_T>::TreeNodePtr;
+
         private:
             void rotateLeft(TreeNodePtr _node);
             void rotateRight(TreeNodePtr _node);
 
             virtual void adjust(TreeNodePtr _node) override;
-
         };
 
         #include "rb_tree.hxx"

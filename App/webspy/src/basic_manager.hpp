@@ -84,7 +84,7 @@ string CBasicManager<T>::getPendingRecordsID(vector<T*>& _records)
     {
         records = "(";
 
-        vector<T*>::const_iterator it = _records.begin();
+        typename vector<T*>::const_iterator it = _records.begin();
         int i = 0;
         for (; it != _records.end(); ++it)
         {

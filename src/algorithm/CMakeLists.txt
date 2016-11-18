@@ -46,6 +46,6 @@ set(TEST_SOURCES	test/main.cpp
 
 add_executable(${PROJECT_TEST_NAME} ${TEST_SOURCES})
 add_dependencies(${PROJECT_TEST_NAME} ${PROJECT_NAME})
-target_link_libraries(${PROJECT_TEST_NAME} algm gtest popt log4cplus.lib)
+target_link_libraries(${PROJECT_TEST_NAME} algm gtest popt log4cplus)
 
 set_target_properties (${PROJECT_TEST_NAME} PROPERTIES FOLDER test)

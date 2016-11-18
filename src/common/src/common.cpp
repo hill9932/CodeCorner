@@ -1,4 +1,4 @@
-#include "common.h"
+#include "log_.h"
 #include "stdString.h"
 
 namespace LabSpace
@@ -105,14 +105,14 @@ namespace LabSpace
         int Util::CreateThreadKey(ThreadSpecificKey* _key, void(*destructor)(void *))
         {
             int err = pthread_key_create(_key, destructor);
-            ON_ERROR_PRINT_LAST_ERROR(err, != , 0);
+            ON_ERROR_PRINT_LAST_ERROR(err, !=, 0);
             return err;
         }
 
         int Util::DeleteThreadKey(ThreadSpecificKey _key)
         {
             int err = pthread_key_delete(_key);
-            ON_ERROR_PRINT_LAST_ERROR(err, != , 0);
+            ON_ERROR_PRINT_LAST_ERROR(err, !=, 0);
             return err;
         }
 

@@ -77,8 +77,8 @@ private:
     struct evdns_base*      m_dnsbase;
     struct event_base*      m_evbase;
 
-    std::atomic_uint64_t    m_issueCount;
-    std::atomic_uint64_t    m_finishCount;
+    std::atomic<u_int64>    m_issueCount;
+    std::atomic<u_int64>    m_finishCount;
 
     CMemCreator<HTTPClient_t>*  m_memAllocator;
     vector<HTTPClientRawPtr>   m_HCRecords;

@@ -1,5 +1,7 @@
 #include "file_util.h"
 #include "file_.h"
+#include "stdString.h"
+#include "system_.h"
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -55,10 +57,10 @@ namespace LabSpace
             tmpFile += "/access_detect.txt";
 
 #ifndef WIN32
-            int h = ::open(tmpFile, O_CREAT | O_RDWR, 0644);
+            int h = ::open(tmpFile.c_str(), O_CREAT | O_RDWR, 0644);
             if (h == -1)    return false;
             ::close(h);
-            unlink(tmpFile);
+            unlink(tmpFile.c_str());
 #endif
 
             return true;
@@ -183,19 +185,19 @@ namespace LabSpace
                     if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
                         continue;
 
-                    tstring fullFileName;
+                    CStdString fullFileName;
                     fullFileName.Format("%s/%s", realPath, dir->d_name);
-                    if (!stat(fullFileName, &states))
+                    if (!stat(fullFileName.c_str(), &states))
                     {
                         if (S_ISDIR(states.st_mode) && depth > 0)
                         {
                             ClearPath(fullFileName, depth);
-                            if (0 != rmdir_t(fullFileName))
+                            if (0 != rmdir_t(fullFileName.c_str()))
                                 return false; // The depth must be reached
                         }
                         else
                         {
-                            if (0 != remove_t(fullFileName))
+                            if (0 != remove_t(fullFileName.c_str()))
                                 return false;
                         }
                     }
@@ -226,7 +228,7 @@ namespace LabSpace
             cmd += _src;
             cmd += " ";
             cmd += _dst;
-            return MySystem(cmd) == 0;
+            return SysUtil::MySystem(cmd.c_str()) == 0;
 #endif
         }
 
@@ -264,7 +266,7 @@ namespace LabSpace
                 flag.l_whence = SEEK_SET;
                 flag.l_start = 0;
                 flag.l_len = _fileSize;
-                xfsctl(_path, fd, XFS_IOC_RESVSP64, &flag);
+                xfsctl(_path.c_str(), fd, XFS_IOC_RESVSP64, &flag);
             }
             else
             {

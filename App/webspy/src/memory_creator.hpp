@@ -24,6 +24,9 @@ public:
 };
 
 
+template<class T> class CMemCreator;
+
+
 template<class T>
 class CMemDeleter : public ISingleton<CMemDeleter<T> >
 {
@@ -108,7 +111,7 @@ public:
 
     void cleanup()
     {
-        list<MemPtr>::const_iterator it = m_shadowMemPool.begin();
+        typename list<MemPtr>::const_iterator it = m_shadowMemPool.begin();
         for (; it != m_shadowMemPool.end(); ++it)
         {
             if ((*it)->finished)

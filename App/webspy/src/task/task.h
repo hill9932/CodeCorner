@@ -5,7 +5,7 @@
 #include "singleton.h"
 #include <tbb/pipeline.h>
 #include <thread>
-
+#include <atomic>
 
 class CTask : public tbb::filter
 {
@@ -18,8 +18,7 @@ public:
     bool virtual init() { return true; }
 
 protected:
-    std::atomic_uint64_t    m_issueCount;
-
+    std::atomic<u_int64>    m_issueCount;
 };
 
 

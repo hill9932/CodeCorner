@@ -41,13 +41,14 @@ set(COMMON_HEADER 	src/platform.h
 					src/singleton.h)
 
 add_library(common STATIC ${COMMON_SRC} ${COMMON_HEADER})
-target_link_libraries(common lua)
+target_link_libraries(common lua log4cplus ${SYSTEM_LIBS})
 
 if (MSVC)
 	target_link_libraries(common Ws2_32.lib)
 endif()
 
 set_target_properties (common PROPERTIES FOLDER lib)
+
 
 #
 # this project is to test common library
@@ -63,6 +64,6 @@ set(COMMON_TEST_SRC	test/string_test.cpp
 
 add_executable(common_test ${COMMON_TEST_SRC})
 add_dependencies(common_test common)
-target_link_libraries(common_test common gtest popt log4cplus.lib)
+target_link_libraries(common_test common gtest popt log4cplus)
 
 set_target_properties (common_test PROPERTIES FOLDER test)

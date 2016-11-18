@@ -64,7 +64,7 @@ namespace LabSpace
             struct stat statbuf;
             if (fstat(m_fileHandle, &statbuf) == -1)
             {
-                PV_LOG_LAST_ERRORMSG();
+                LOG_LAST_ERRORMSG();
                 return 0;
             }
 
@@ -93,7 +93,7 @@ namespace LabSpace
             if (!SetEndOfFile(m_fileHandle))
                 z = Util::GetLastSysError();
 #else
-            z = truncate(m_fileName, _fileSize);
+            z = truncate(m_fileName.c_str(), _fileSize);
 #endif
             ON_ERROR_PRINT_LASTMSG_S_AND_DO(z, != , z, "Set file size " << m_fileName, "");
 
@@ -157,7 +157,7 @@ namespace LabSpace
             if (z != 1) 
             {
                 z = -z;
-                SetLastSysError(z);
+                Util::SetLastSysError(z);
             }
 
             if (z == 1)
@@ -211,7 +211,7 @@ namespace LabSpace
             if (z != 1)
             {
                 z = -z;
-                SetLastSysError(z);
+                Util::SetLastSysError(z);
             }
 
             if (z == 1)
@@ -256,7 +256,7 @@ namespace LabSpace
                */
 
             z = io_submit(m_filePool->getAioObject(), _count, (iocb**)_ioRequests);
-            ON_ERROR_PRINT_LASTMSG_AND_DO(z, !=, _count, SetLastSysError(-z));
+            ON_ERROR_PRINT_LASTMSG_AND_DO(z, !=, _count, Util::SetLastSysError(-z));
 
 #else
             for (int i = 0; i < _count; ++i)
@@ -371,7 +371,7 @@ namespace LabSpace
 
         retry:
             m_fileHandle = ::open(_fileName.c_str(), access, 0644);
-            int err = GetLastSysError();
+            int err = Util::GetLastSysError();
 
             ON_ERROR_PRINT_LASTMSG_S_AND_DO(m_fileHandle, == , INVALID_HANDLE_VALUE, "Create file " << m_fileName, "");
             if (m_fileHandle == INVALID_HANDLE_VALUE)
@@ -398,7 +398,7 @@ namespace LabSpace
             if (_offset != (u_int64)-1)  lseek64(m_fileHandle, _offset, SEEK_SET);
 
             int n = ::read(m_fileHandle, _data, _dataLen);
-            PV_ON_ERROR_PRINT_LAST_ERROR(n, == , -1);
+            ON_ERROR_PRINT_LAST_ERROR(n, == , -1);
             return n;
         }
 
@@ -408,7 +408,7 @@ namespace LabSpace
             if (_offset != (u_int64)-1)  lseek64(m_fileHandle, _offset, SEEK_SET);
 
             int n = ::write(m_fileHandle, _data, _dataLen);
-            PV_ON_ERROR_PRINT_LAST_ERROR(n, != , _dataLen);
+            ON_ERROR_PRINT_LAST_ERROR(n, != , _dataLen);
             return n;
         }
 

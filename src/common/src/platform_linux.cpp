@@ -9,6 +9,7 @@
  */
 #include "common.h"
 #include "platform.h"
+#include "log_.h"
 
 #ifdef LINUX
 
@@ -22,23 +23,23 @@ int DropPrivileges(const char* _username)
 
     if (getgid() && getuid()) 
     {
-        RM_LOG_DEBUG("I'm not a superuser.");
+        L4C_LOG_ERROR("I'm not a superuser.");
         return 0;
     }
 
     pw = getpwnam(username);
-    ON_ERROR_PRINT_LASTMSG_AND_RETURN(pw, ==, NULL);
+    ON_ERROR_PRINT_LASTMSG_AND_DO(pw, ==, NULL, return err);
 
     // Drop privileges
     if ((setgid(pw->pw_gid) != 0) || (setuid(pw->pw_uid) != 0)) 
     {
-        int err = GetLastSysError();
+        int err = Util::GetLastSysError();
         LOG_ERRORMSG(err);
         return err;
     } 
 
 
-    RM_LOG_INFO_S("Success to change user to " << username);
+    L4C_LOG_ERROR("Success to change user to " << username);
 
     umask(0);
     return 0;
