@@ -7,12 +7,6 @@ set(PROJECT_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(3DPARTY_LIB_DIR "")		# record where to find the 3rdParty libraries
 
 #
-# define preprocessors
-#
-add_definitions(/wd"4244" /wd"4267" /wd"4996" /wd"4800")
-
-
-#
 # project settings
 #
 project(CodeCorner)
@@ -23,6 +17,11 @@ if (UNIX)
 	set(3DPARTY_LIB_DIR "linux")
 	
 elseif (MSVC)
+	#
+	# define preprocessors
+	#
+	add_definitions(/wd"4244" /wd"4267" /wd"4996" /wd"4800")
+
     add_definitions(-DWIN32)
 	add_definitions(-DWIN32_LEAN_AND_MEAN)
 
@@ -55,4 +54,4 @@ add_subdirectory(src/algorithm)
 #
 # include the applications
 #
-add_subdirectory(app/webspy)
+add_subdirectory(App/webspy)
