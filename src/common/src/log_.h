@@ -116,6 +116,12 @@ extern log4cplus::Logger* g_logger;
 }
 
 #define ON_ERROR_RETURN_ERRCODE(expr, comp, error)  if (expr comp error)    return expr;
+#define ON_ERROR_PRINT_LAST_ERROR(expr, comp, error)    \
+    if (expr comp error)	{                   \
+        u_int32 err = Util::GetLastSysError();  \
+        LOG_ERRORMSG(err);                      \
+    }
+
 #define ON_ERROR_PRINT_LASTMSG_AND_DO(expr, comp, error, action)    \
     if (expr comp error)	{                   \
         u_int32 err = Util::GetLastSysError();  \
